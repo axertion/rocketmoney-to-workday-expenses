@@ -159,161 +159,153 @@ async function clickSelectedMenuItemToSave() {
   }
 }
 
-async function fillTransactionForm(transaction) {
-  try {
-    console.log('Processing transaction:', transaction);
+
+async function fillExpenseDateInput(formContainer, transaction) {
+  const date = new Date(transaction.date);
     
-    // The form container should already be available from clickAddButton
-    const formContainer = document.querySelector('[data-automation-id="inlineRowEditPage"]');
-    if (!formContainer) {
-      throw new Error('Expense form not found');
+  // Set the date (month, day, year)
+  const monthInput = formContainer.querySelector('[data-automation-id="dateSectionMonth-input"]');
+  const dayInput = formContainer.querySelector('[data-automation-id="dateSectionDay-input"]');
+  const yearInput = formContainer.querySelector('[data-automation-id="dateSectionYear-input"]');
+
+  if (!monthInput || !dayInput || !yearInput) {
+    throw new Error('Could not find date input fields');
+  }
+
+  // Clear the inputs first
+  monthInput.value = '';
+  dayInput.value = '';
+  yearInput.value = '';
+
+  // Format the date values
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  const year = date.getFullYear().toString();
+
+  // Simulate typing in each field
+  console.log('Setting month:', month);
+  await simulateTyping(monthInput, month);
+  
+  console.log('Setting day:', day);
+  await simulateTyping(dayInput, day);
+  
+  console.log('Setting year:', year);
+  await simulateTyping(yearInput, year);
+
+
+  monthInput.dispatchEvent(new Event('blur', { bubbles: true }));
+  dayInput.dispatchEvent(new Event('blur', { bubbles: true }));
+  yearInput.dispatchEvent(new Event('blur', { bubbles: true }));
+
+  console.log('Set date:', date.toISOString());
+  await new Promise(resolve => setTimeout(resolve, 1000));
+
+  // Optionally click the calendar icon to trigger re-evaluation
+  const calendarBtn = document.querySelector('[data-automation-id="datePickerButton"]');
+  if (calendarBtn) {
+    console.log('Clicking calendar button');
+    calendarBtn.click();
+
+  await new Promise(resolve => setTimeout(resolve, 1000));
+
+  const selectedDay = await waitForElement('[data-automation-id="datePickerSelectedDay"]');
+  if (selectedDay) {
+    console.log('Found selected day element');
+    selectedDay.click();
+    console.log('Clicked on selected day element');
+  }
+  else {
+      throw new Error('Could not find selected day element');
     }
-    console.log('Using existing expense form');
+  }
 
-    // Fill in the expense details
-    const date = new Date(transaction.date);
-    
-    // Set the date (month, day, year)
-    const monthInput = formContainer.querySelector('[data-automation-id="dateSectionMonth-input"]');
-    const dayInput = formContainer.querySelector('[data-automation-id="dateSectionDay-input"]');
-    const yearInput = formContainer.querySelector('[data-automation-id="dateSectionYear-input"]');
+  await new Promise(resolve => setTimeout(resolve, 500));
+}
 
-    if (!monthInput || !dayInput || !yearInput) {
-      throw new Error('Could not find date input fields');
-    }
+async function fillExpenseItemInput(formContainer, transaction) {
+  // Set the expense item (description)
+  const expenseItemInput = formContainer.querySelector('[data-automation-id="monikerListSuggestionsInput"] input');
+  if (!expenseItemInput) {
+    throw new Error('Could not find expense item input');
+  }
 
-    // Clear the inputs first
-    monthInput.value = '';
-    dayInput.value = '';
-    yearInput.value = '';
+  // Add debugging event listeners to log key events
+  const logKeyEvent = (event) => {
+    console.log(`Key event on expense item input: ${event.type}`, {
+      key: event.key,
+      code: event.code,
+      keyCode: event.keyCode,
+      which: event.which,
+      bubbles: event.bubbles,
+      cancelable: event.cancelable
+    });
+  };
 
-    // Format the date values
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const year = date.getFullYear().toString();
+  expenseItemInput.addEventListener('keydown', logKeyEvent);
+  expenseItemInput.addEventListener('keypress', logKeyEvent);
+  expenseItemInput.addEventListener('keyup', logKeyEvent);
 
-    // Simulate typing in each field
-    console.log('Setting month:', month);
-    await simulateTyping(monthInput, month);
-    
-    console.log('Setting day:', day);
-    await simulateTyping(dayInput, day);
-    
-    console.log('Setting year:', year);
-    await simulateTyping(yearInput, year);
+  // Try to find and select the "Travel - Other" option with retries
+  let maxRetries = 3;
+  let retryCount = 0;
+  let travelOtherContainer = null;
 
-
-    monthInput.dispatchEvent(new Event('blur', { bubbles: true }));
-    dayInput.dispatchEvent(new Event('blur', { bubbles: true }));
-    yearInput.dispatchEvent(new Event('blur', { bubbles: true }));
-
-
-    
-    console.log('Set date:', date.toISOString());
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Optionally click the calendar icon to trigger re-evaluation
-    const calendarBtn = document.querySelector('[data-automation-id="datePickerButton"]');
-    if (calendarBtn) {
-      console.log('Clicking calendar button');
-      calendarBtn.click();
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    const selectedDay = await waitForElement('[data-automation-id="datePickerSelectedDay"]');
-    if (selectedDay) {
-      console.log('Found selected day element');
-      selectedDay.click();
-      console.log('Clicked on selected day element');
-    }
-    else {
-        throw new Error('Could not find selected day element');
-      }
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Set the expense item (description)
-    const expenseItemInput = formContainer.querySelector('[data-automation-id="monikerListSuggestionsInput"] input');
-    if (!expenseItemInput) {
-      throw new Error('Could not find expense item input');
-    }
-    
-    // Add debugging event listeners to log key events
-    const logKeyEvent = (event) => {
-      console.log(`Key event on expense item input: ${event.type}`, {
-        key: event.key,
-        code: event.code,
-        keyCode: event.keyCode,
-        which: event.which,
-        bubbles: event.bubbles,
-        cancelable: event.cancelable
-      });
-    };
-
-    expenseItemInput.addEventListener('keydown', logKeyEvent);
-    expenseItemInput.addEventListener('keypress', logKeyEvent);
-    expenseItemInput.addEventListener('keyup', logKeyEvent);
-    
-    // Try to find and select the "Travel - Other" option with retries
-    let maxRetries = 3;
-    let retryCount = 0;
-    let travelOtherContainer = null;
-    
-    while (retryCount < maxRetries && !travelOtherContainer) {
-      try {
-        // Input "Travel" and trigger the search
-        await inputExpenseItemAndSearch(expenseItemInput);
-        
-        // Wait for the "Travel - Other" radio button to appear
-        travelOtherContainer = await waitForElement('[aria-label="Travel - Other radio button  unselected"]');
-        console.log('Found "Travel - Other" container');
-      } catch (error) {
-        retryCount++;
-        console.log(`Could not find "Travel - Other" container, retry ${retryCount} of ${maxRetries}`);
-        
-        if (retryCount < maxRetries) {
-          console.log('Retrying expense item input operation...');
-          // Wait a moment before retrying
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        } else {
-          console.log('Max retries reached, continuing without "Travel - Other" container');
-        }
-      }
-    }
-    
-    // Find and select the radio button if the container was found
-    if (travelOtherContainer) {
-      const radioButton = travelOtherContainer.querySelector('[data-automation-id="radioBtn"]');
-      if (radioButton) {
-        radioButton.click();
-        console.log('Selected "Travel - Other" radio button');
+  while (retryCount < maxRetries && !travelOtherContainer) {
+    try {
+      // Input "Travel" and trigger the search
+      await inputExpenseItemAndSearch(expenseItemInput);
+      
+      // Wait for the "Travel - Other" radio button to appear
+      travelOtherContainer = await waitForElement('[aria-label="Travel - Other radio button  unselected"]');
+      console.log('Found "Travel - Other" container');
+    } catch (error) {
+      retryCount++;
+      console.log(`Could not find "Travel - Other" container, retry ${retryCount} of ${maxRetries}`);
+      
+      if (retryCount < maxRetries) {
+        console.log('Retrying expense item input operation...');
+        // Wait a moment before retrying
+        await new Promise(resolve => setTimeout(resolve, 1000));
       } else {
-        console.log('Could not find radio button inside "Travel - Other" container');
+        console.log('Max retries reached, continuing without "Travel - Other" container');
       }
     }
+  }
 
-
-    // Set the amount (remove the $ symbol and convert to number)
-    const amountInput = formContainer.querySelector('[data-automation-id="numericInput"]');
-    if (!amountInput) {
-      throw new Error('Could not find amount input');
+  // Find and select the radio button if the container was found
+  if (travelOtherContainer) {
+    const radioButton = travelOtherContainer.querySelector('[data-automation-id="radioBtn"]');
+    if (radioButton) {
+      radioButton.click();
+      console.log('Selected "Travel - Other" radio button');
+    } else {
+      console.log('Could not find radio button inside "Travel - Other" container');
     }
-    const amount = transaction.amount.replace('$', '').trim();
-    
-    // Focus the input first
-    amountInput.focus();
-    
-    // Set the value and trigger multiple events
-    amountInput.value = amount;
-    amountInput.dispatchEvent(new Event('input', { bubbles: true }));
-    amountInput.dispatchEvent(new Event('change', { bubbles: true }));
-    amountInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
-    console.log('Set amount:', amount);
+  }
+}
 
-    // Set the memo (optional)
-    const memoLabel = Array.from(formContainer.querySelectorAll('[data-automation-id="formLabel"]'))
+async function fillAmountInput(formContainer, transaction) {
+  // Set the amount (remove the $ symbol and convert to number)
+  const amountInput = formContainer.querySelector('[data-automation-id="numericInput"]');
+  if (!amountInput) {
+    throw new Error('Could not find amount input');
+  }
+  const amount = transaction.amount.replace('$', '').trim();
+  
+  // Focus the input first
+  amountInput.focus();
+  
+  // Set the value and trigger multiple events
+  amountInput.value = amount;
+  amountInput.dispatchEvent(new Event('input', { bubbles: true }));
+  amountInput.dispatchEvent(new Event('change', { bubbles: true }));
+  amountInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+  console.log('Set amount:', amount);
+}
+
+async function fillMemoInput(formContainer, transaction) {
+      // Set the memo (optional)
+      const memoLabel = Array.from(formContainer.querySelectorAll('[data-automation-id="formLabel"]'))
       .find(label => label.textContent.trim() === 'Memo');
     
     if (memoLabel) {
@@ -346,7 +338,25 @@ async function fillTransactionForm(transaction) {
     // Add a delay before looking for the selected item
     console.log('Waiting 2 seconds before looking for selected item...');
     await new Promise(resolve => setTimeout(resolve, 2000));
+}
 
+
+async function fillTransactionForm(transaction) {
+  try {
+    console.log('Processing transaction:', transaction);
+    
+    // The form container should already be available from clickAddButton
+    const formContainer = document.querySelector('[data-automation-id="inlineRowEditPage"]');
+    if (!formContainer) {
+      throw new Error('Expense form not found');
+    }
+    console.log('Using existing expense form');
+
+    // Fill in the expense details
+    await fillExpenseDateInput(formContainer, transaction);
+    await fillExpenseItemInput(formContainer, transaction);
+    await fillAmountInput(formContainer, transaction);
+    await fillMemoInput(formContainer, transaction);
 
     // Click the selected menu item on the left to save
     clickSelectedMenuItemToSave();
