@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const extractBtn = document.getElementById('extractBtn');
   const addToExpenseBtn = document.getElementById('addToExpenseBtn');
   const transactionsDiv = document.getElementById('transactions');
+  const transactionsBody = document.getElementById('transactionsBody');
   const lastWeekBtn = document.getElementById('lastWeekBtn');
   const thisWeekBtn = document.getElementById('thisWeekBtn');
   const todayBtn = document.getElementById('todayBtn');
@@ -134,7 +135,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     extractBtn.disabled = true;
-    transactionsDiv.innerHTML = '<div class="loading">Extracting transactions...</div>';
+    transactionsBody.innerHTML = '<div class="loading">Extracting transactions...</div>';
 
     try {
       // Get the active tab
@@ -166,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
       displayTransactions(response.transactions);
       addToExpenseBtn.disabled = false;
     } catch (error) {
-      transactionsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+      transactionsBody.innerHTML = `<div class="error">Error: ${error.message}</div>`;
     } finally {
       extractBtn.disabled = false;
     }
@@ -218,18 +219,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function displayTransactions(transactions) {
     if (!transactions || transactions.length === 0) {
-      transactionsDiv.innerHTML = '<div class="no-transactions">No transactions found in the selected date range.</div>';
+      transactionsBody.innerHTML = '<div class="transaction-row"><div class="no-transactions">No transactions found in the selected date range.</div></div>';
       return;
     }
 
-    const transactionsHTML = transactions.map(transaction => `
-      <div class="transaction-item">
-        <div class="transaction-date">${new Date(transaction.date).toLocaleDateString()}</div>
-        <div class="transaction-amount">${transaction.amount}</div>
-        <div class="transaction-description">${transaction.description}</div>
-      </div>
-    `).join('');
+    const transactionsHTML = transactions.map(transaction => {
+      const date = new Date(transaction.date);
+      const formattedDate = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+      
+      return `
+        <div class="transaction-row">
+          <div class="memo-col">
+            <div>${transaction.description}</div>
+            <div class="memo-date">${formattedDate}</div>
+          </div>
+          <div class="expense-col">
+            <select class="expense-select">
+              <option value="team-meals">Team Meals - Individual</option>
+            </select>
+          </div>
+          <div class="amount-col">${transaction.amount}</div>
+        </div>
+      `;
+    }).join('');
 
-    transactionsDiv.innerHTML = transactionsHTML;
+    transactionsBody.innerHTML = transactionsHTML;
   }
 }); 
