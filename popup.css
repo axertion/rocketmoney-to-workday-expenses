@@ -1,0 +1,286 @@
+html, body {
+  height: 600px;
+  width: 800px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: #f5f5f5;
+  margin: 0;
+  overflow: hidden;
+}
+
+.container {
+  box-sizing: border-box;
+  height: 600px;
+  width: 800px;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  gap: 24px;
+}
+
+.header {
+  display: none;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-right: 16px;
+}
+
+.logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.arrow {
+  font-size: 20px;
+  color: #666;
+}
+
+h1 {
+  font-size: 20px;
+  margin: 0;
+  color: #333;
+}
+
+.card-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  flex: 1;
+  max-height: 100%;
+}
+
+.card {
+  background: white;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.card-top {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.card-1 {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Important for nested flex scrolling */
+  padding: 0;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.card-2 .step {
+  margin-bottom: 0;
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  background-color: #f0f0f0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  color: #333;
+}
+
+.step h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  flex: 1;
+}
+
+.date-range {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.date-input {
+  box-sizing: border-box;
+  flex: 1;
+  padding: 8px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  height: 40px;
+  background-color: #f8f8f8;
+}
+
+.button {
+  padding: 8px 24px;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 500;
+  height: 40px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.button.primary {
+  background-color: #000;
+  color: white;
+}
+
+.button.primary:hover {
+  background-color: #333;
+}
+
+.button.primary:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Quick select buttons */
+.quick-select {
+  display: flex;
+  gap: 8px;
+}
+
+.quick-select button {
+  padding: 8px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: white;
+  color: #333;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quick-select button:hover {
+  background-color: #f8f8f8;
+}
+
+.transactions-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0; /* Important for nested flex scrolling */
+}
+
+.transactions-table {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0; /* Important for nested flex scrolling */
+}
+
+.table-header {
+  display: grid;
+  grid-template-columns: 1.5fr 1.5fr 1fr;
+  padding: 12px 16px;
+  background-color: #f8f8f8;
+  border-bottom: 1px solid #e0e0e0;
+  font-weight: 500;
+  color: #666;
+  font-size: 14px;
+}
+
+/* Add right alignment for the Amount column header */
+.table-header > div:last-child {
+  text-align: right;
+}
+
+.table-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0; /* Important for nested flex scrolling */
+}
+
+.transaction-row {
+  display: grid;
+  grid-template-columns: 1.5fr 1.5fr 1fr;
+  padding: 16px;
+  border-bottom: 1px solid #e0e0e0;
+  align-items: center;
+  font-size: 14px;
+}
+
+.transaction-row:last-child {
+  border-bottom: none;
+}
+
+.memo-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.memo-date {
+  color: #666;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.expense-col {
+  padding-right: 12px;
+}
+
+.amount-col {
+  text-align: right;
+  font-weight: 500;
+}
+
+.expense-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background-color: white;
+  font-size: 14px;
+  color: #333;
+}
+
+.action-container {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Loading and error states */
+.loading {
+  text-align: center;
+  color: #666;
+  padding: 20px;
+}
+
+.error {
+  color: #dc3545;
+  background-color: #f8d7da;
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+
+.no-transactions {
+  text-align: center;
+  color: #666;
+  padding: 20px;
+  grid-column: 1 / -1;
+} 
