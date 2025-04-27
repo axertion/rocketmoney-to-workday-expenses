@@ -192,34 +192,41 @@ async function fillExpenseDateInput(formContainer, transaction) {
   console.log('Setting year:', year);
   await simulateTyping(yearInput, year);
 
-
   monthInput.dispatchEvent(new Event('blur', { bubbles: true }));
   dayInput.dispatchEvent(new Event('blur', { bubbles: true }));
   yearInput.dispatchEvent(new Event('blur', { bubbles: true }));
 
   console.log('Set date:', date.toISOString());
-  await new Promise(resolve => setTimeout(resolve, 1000));
 
+  await new Promise(resolve => setTimeout(resolve, 1000));
   // Optionally click the calendar icon to trigger re-evaluation
   const calendarBtn = document.querySelector('[data-automation-id="datePickerButton"]');
   if (calendarBtn) {
     console.log('Clicking calendar button');
     calendarBtn.click();
+  }
 
   await new Promise(resolve => setTimeout(resolve, 1000));
 
-  const selectedDay = await waitForElement('[data-automation-id="datePickerSelectedDay"]');
-  if (selectedDay) {
-    console.log('Found selected day element');
-    selectedDay.click();
-    console.log('Clicked on selected day element');
-  }
-  else {
-      throw new Error('Could not find selected day element');
+  // Wait for either the selected day or selected today element
+  try {
+    console.log('Looking for selected day element...');
+    const selectedDay = await Promise.race([
+      waitForElement('[data-automation-id="datePickerSelectedDay"]'),
+      waitForElement('[data-automation-id="datePickerSelectedToday"]')
+    ]);
+    
+    if (selectedDay) {
+      console.log('Found selected day element:', selectedDay.getAttribute('data-automation-id'));
+      selectedDay.click();
+      console.log('Clicked selected day');
+    } else {
+      console.log('Could not find selected day element');
     }
+  } catch (error) {
+    console.error('Error handling date selection:', error);
+    // Continue even if we can't find the element, as the date might still be set correctly
   }
-
-  await new Promise(resolve => setTimeout(resolve, 500));
 }
 
 async function fillExpenseItemInput(formContainer, transaction) {
@@ -245,41 +252,41 @@ async function fillExpenseItemInput(formContainer, transaction) {
   expenseItemInput.addEventListener('keypress', logKeyEvent);
   expenseItemInput.addEventListener('keyup', logKeyEvent);
 
-  // Try to find and select the "Travel - Other" option with retries
+  // Try to find and select the expense item with retries
   let maxRetries = 3;
   let retryCount = 0;
-  let travelOtherContainer = null;
+  let expenseItemContainer = null;
 
-  while (retryCount < maxRetries && !travelOtherContainer) {
+  while (retryCount < maxRetries && !expenseItemContainer) {
     try {
-      // Input "Travel" and trigger the search
-      await inputExpenseItemAndSearch(expenseItemInput);
+      // Input the expense label and trigger the search
+      await inputExpenseItemAndSearch(expenseItemInput, transaction.expenseLabel);
       
-      // Wait for the "Travel - Other" radio button to appear
-      travelOtherContainer = await waitForElement('[aria-label="Travel - Other radio button  unselected"]');
-      console.log('Found "Travel - Other" container');
+      // Wait for the expense item radio button to appear
+      expenseItemContainer = await waitForElement(`[aria-label="${transaction.expenseLabel} radio button  unselected"]`);
+      console.log(`Found "${transaction.expenseLabel}" container`);
     } catch (error) {
       retryCount++;
-      console.log(`Could not find "Travel - Other" container, retry ${retryCount} of ${maxRetries}`);
+      console.log(`Could not find "${transaction.expenseLabel}" container, retry ${retryCount} of ${maxRetries}`);
       
       if (retryCount < maxRetries) {
         console.log('Retrying expense item input operation...');
         // Wait a moment before retrying
         await new Promise(resolve => setTimeout(resolve, 1000));
       } else {
-        console.log('Max retries reached, continuing without "Travel - Other" container');
+        console.log('Max retries reached, continuing without expense item container');
       }
     }
   }
 
   // Find and select the radio button if the container was found
-  if (travelOtherContainer) {
-    const radioButton = travelOtherContainer.querySelector('[data-automation-id="radioBtn"]');
+  if (expenseItemContainer) {
+    const radioButton = expenseItemContainer.querySelector('[data-automation-id="radioBtn"]');
     if (radioButton) {
       radioButton.click();
-      console.log('Selected "Travel - Other" radio button');
+      console.log(`Selected "${transaction.expenseLabel}" radio button`);
     } else {
-      console.log('Could not find radio button inside "Travel - Other" container');
+      console.log('Could not find radio button inside expense item container');
     }
   }
 }
@@ -394,15 +401,15 @@ function waitForElement(selector, timeout = 10000) {
   });
 }
 
-// Function to input "Travel" and trigger the search
-async function inputExpenseItemAndSearch(expenseItemInput) {
+// Function to input expense item and trigger the search
+async function inputExpenseItemAndSearch(expenseItemInput, searchText) {
   // Step 1: Click on the search field input
   expenseItemInput.focus();
   expenseItemInput.click();
   console.log('Clicked on expense item search field');
   
-  // Step 2: Input the value "Travel" and hit enter
-  expenseItemInput.value = "Travel";
+  // Step 2: Input the search text and hit enter
+  expenseItemInput.value = searchText;
   expenseItemInput.dispatchEvent(new Event('input', { bubbles: true }));
   
   // Add a delay to allow the input to register
@@ -493,7 +500,7 @@ async function inputExpenseItemAndSearch(expenseItemInput) {
     console.log('Clicked search button');
   }
   
-  console.log('Entered "Travel" and attempted to trigger Enter/Return key sequence');
+  console.log(`Entered "${searchText}" and attempted to trigger Enter/Return key sequence`);
   
   // Add a longer delay to allow the UI to respond
   await new Promise(resolve => setTimeout(resolve, 2000));
