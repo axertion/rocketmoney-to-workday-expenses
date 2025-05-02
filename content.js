@@ -15,38 +15,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }))
     );
 
-    extractTransactions(request.startDate, request.endDate)
+    extractTransactions()
       .then(transactions => sendResponse({ transactions }))
       .catch(error => sendResponse({ error: error.message }));
     return true; // Will respond asynchronously
   }
 });
 
-async function extractTransactions(startDate, endDate) {
+async function extractTransactions() {
   // Wait for the transactions to load
   await waitForElement('[data-test="transaction-table-row"]');
   
   const transactions = [];
   
-  console.log('START AND END DATES:', {
-    startDate: startDate,
-    endDate: endDate
-  });
-
-  // Parse dates and normalize to UTC
-  const startDateObj = new Date(startDate);
-  startDateObj.setUTCHours(0, 0, 0, 0);
-  const endDateObj = new Date(endDate);
-  endDateObj.setUTCHours(23, 59, 59, 999);
-
-  // Get the year from the start date
-  const selectedYear = startDateObj.getUTCFullYear();
-
-  console.log('Selected date range:', {
-    startDate: startDateObj.toISOString(),
-    endDate: endDateObj.toISOString()
-  });
-
   // Get all transaction elements
   const transactionElements = document.querySelectorAll('[data-test="transaction-table-row"]');
   console.log('Found transaction elements:', transactionElements.length);
@@ -69,32 +50,21 @@ async function extractTransactions(startDate, endDate) {
       const transactionMonth = parseInt(month);
       const transactionDay = parseInt(day);
 
-      // Create a date object for comparison and normalize to noon UTC
-      const transactionDate = new Date(Date.UTC(selectedYear, transactionMonth - 1, transactionDay, 12, 0, 0));
+      // Create a date object for the current year
+      const currentYear = new Date().getFullYear();
+      const transactionDate = new Date(currentYear, transactionMonth - 1, transactionDay);
       
-      console.log('Parsed transaction date:', {
-        month: transactionMonth,
-        day: transactionDay,
-        transactionDate: transactionDate.toISOString(),
-        startDate: startDateObj.toISOString(),
-        endDate: endDateObj.toISOString(),
-        isInRange: transactionDate >= startDateObj && transactionDate <= endDateObj
+      transactions.push({
+        date: transactionDate.toISOString(),
+        amount: amountElement.textContent.trim(),
+        description: descriptionElement.value || descriptionElement.textContent.trim()
       });
-
-      // Check if the transaction is within the date range
-      if (transactionDate >= startDateObj && transactionDate <= endDateObj) {
-        transactions.push({
-          date: transactionDate.toISOString(),
-          amount: amountElement.textContent.trim(),
-          description: descriptionElement.value || descriptionElement.textContent.trim()
-        });
-      }
     } catch (error) {
       console.error('Error parsing transaction:', error);
     }
   }
 
-  console.log('Found matching transactions:', transactions.length);
+  console.log('Found transactions:', transactions.length);
   return transactions;
 }
 

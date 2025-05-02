@@ -22,74 +22,22 @@
             <div class="step-number">1</div>
             <div class="step-content">
               <h2>Rocket Money</h2>
-              <p class="step-description">Select transactions you want to expense.</p>
+              <p class="step-description">Filter transactions on Rocket Money to expense, then add them here.</p>
             </div>
-            
-            <div class="date-picker-container">
-              <button id="dateRangeBtn" class="date-range-button">
-                <span id="dateRangeSummary">Last Week</span>
-                <img src="icons/chevron-down.svg" alt="▼" class="chevron-icon">
-              </button>
-
-              <div id="datePickerDropdown" class="date-picker-dropdown" style="display: none;">
-                <div class="date-picker-content">
-                  <div class="preset-options">
-                    <button class="preset-option" data-preset="today">Today</button>
-                    <button class="preset-option" data-preset="yesterday">Yesterday</button>
-                    <button class="preset-option" data-preset="this-week">This Week</button>
-                    <button class="preset-option" data-preset="last-week">Last Week</button>
-                    <button class="preset-option" data-preset="last-2-weeks">Last 2 Weeks</button>
-                    <button class="preset-option" data-preset="this-month">This Month</button>
-                    <button class="preset-option" data-preset="last-month">Last Month</button>
-                  </div>
-                  <div class="date-picker-calendar">
-                    <div class="calendar-header">
-                      <button id="prevMonthBtn" class="calendar-nav-btn">
-                        <img src="icons/chevron-left.svg" alt="Previous month" class="calendar-nav-icon">
-                      </button>
-                      <span id="currentMonthYear">April 2025</span>
-                      <button id="nextMonthBtn" class="calendar-nav-btn">
-                        <img src="icons/chevron-right.svg" alt="Next month" class="calendar-nav-icon">
-                      </button>
-                    </div>
-                    <div class="calendar-weekdays">
-                      <div>Sun</div>
-                      <div>Mon</div>
-                      <div>Tue</div>
-                      <div>Wed</div>
-                      <div>Thu</div>
-                      <div>Fri</div>
-                      <div>Sat</div>
-                    </div>
-                    <div id="calendarDays" class="calendar-days"></div>
-                    <div class="calendar-inputs">
-                      <div class="date-input-group">
-                        <label>Start date</label>
-                        <input type="date" id="startDate" class="date-input">
-                      </div>
-                      <div class="date-input-group">
-                        <label>End date</label>
-                        <input type="date" id="endDate" class="date-input">
-                      </div>
-                    </div>
-                    <div class="calendar-footer">
-                      <button id="setDatesBtn" class="button primary">Set Dates</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div class="action-container">
+              <button id="extractBtn" class="button primary">Get transactions</button>
             </div>
-
-            <button id="extractBtn" class="button primary">Get transactions</button>
           </div>
         </div>
 
         <div id="transactions" class="transactions-container">
           <div class="transactions-table">
             <div class="table-header">
-              <div>Memo</div>
-              <div>Expense Item</div>
-              <div>Amount</div>
+              <div class="date-col">Date</div>
+              <div class="memo-col">Memo</div>
+              <div class="expense-col">Expense Item</div>
+              <div class="amount-col">Amount</div>
+              <div class="delete-col"></div>
             </div>
             <div class="table-body" id="transactionsBody"></div>
           </div>
@@ -101,7 +49,7 @@
           <div class="step-number">2</div>
           <div class="step-content">
             <h2>Workday</h2>
-            <p class="step-description">Add transactions to an expense report.</p>
+            <p class="step-description">Edit an expense report, then add the transactions.</p>
           </div>
           <div class="action-container">
             <button id="addToExpenseBtn" class="button primary" disabled>Add to expense report</button>

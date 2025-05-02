@@ -25,6 +25,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // Function to process all transactions
 async function processTransactions(transactions) {
   console.log(`Processing ${transactions.length} transactions`);
+
+  await clickEditExpenseReportButton();
   
   for (let i = 0; i < transactions.length; i++) {
     const transaction = transactions[i];
@@ -68,6 +70,31 @@ async function setNativeValue(element, value) {
     tracker.setValue(lastValue);
   }
   element.dispatchEvent(event);
+}
+
+async function clickEditExpenseReportButton() {
+  try {
+    console.log('Looking for Edit Expense Report button...');
+    
+    // Wait for the Add button to appear
+    const editButton = await waitForElement('[title="Edit Expense Report"]');
+    
+    if (editButton) {
+      console.log('Found Edit Expense Report button, clicking it...');
+      editButton.click();
+      console.log('Clicked Edit button');
+      
+      // Add a small delay to ensure everything is fully loaded
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      return true;
+    } else {
+
+    }
+  } catch (error) {
+    console.error('Error clicking Edit button:', error);
+    throw new Error(`Failed to click Edit button: ${error.message}`);
+  }
 }
 
 
@@ -211,10 +238,11 @@ async function fillExpenseDateInput(formContainer, transaction) {
   // Wait for either the selected day or selected today element
   try {
     console.log('Looking for selected day element...');
-    const selectedDay = await Promise.race([
-      waitForElement('[data-automation-id="datePickerSelectedDay"]'),
-      waitForElement('[data-automation-id="datePickerSelectedToday"]')
-    ]);
+    const selectedDay = await waitForElement(
+      '[data-automation-id="datePickerSelectedDay"]',
+      10000,
+      '[data-automation-id="datePickerSelectedToday"]'
+    );
     
     if (selectedDay) {
       console.log('Found selected day element:', selectedDay.getAttribute('data-automation-id'));
@@ -236,22 +264,6 @@ async function fillExpenseItemInput(formContainer, transaction) {
     throw new Error('Could not find expense item input');
   }
 
-  // Add debugging event listeners to log key events
-  const logKeyEvent = (event) => {
-    console.log(`Key event on expense item input: ${event.type}`, {
-      key: event.key,
-      code: event.code,
-      keyCode: event.keyCode,
-      which: event.which,
-      bubbles: event.bubbles,
-      cancelable: event.cancelable
-    });
-  };
-
-  expenseItemInput.addEventListener('keydown', logKeyEvent);
-  expenseItemInput.addEventListener('keypress', logKeyEvent);
-  expenseItemInput.addEventListener('keyup', logKeyEvent);
-
   // Try to find and select the expense item with retries
   let maxRetries = 3;
   let retryCount = 0;
@@ -262,36 +274,49 @@ async function fillExpenseItemInput(formContainer, transaction) {
       // Input the expense label and trigger the search
       await inputExpenseItemAndSearch(expenseItemInput, transaction.expenseLabel);
       
-      // Wait for the expense item radio button to appear
-      expenseItemContainer = await waitForElement(`[aria-label="${transaction.expenseLabel} radio button  unselected"]`);
-      console.log(`Found "${transaction.expenseLabel}" container`);
+      // Wait for the specific expense item radio button to appear
+      expenseItemContainer = await waitForElement(
+        `[data-automation-label="${transaction.expenseLabel}"]`,
+        5000
+      );
+      
+      console.log(`Found expense item container for "${transaction.expenseLabel}"`);
     } catch (error) {
       retryCount++;
-      console.log(`Could not find "${transaction.expenseLabel}" container, retry ${retryCount} of ${maxRetries}`);
+      console.log(`Could not find expense item container, retry ${retryCount} of ${maxRetries}`);
       
       if (retryCount < maxRetries) {
         console.log('Retrying expense item input operation...');
         // Wait a moment before retrying
         await new Promise(resolve => setTimeout(resolve, 1000));
       } else {
-        console.log('Max retries reached, continuing without expense item container');
+        throw new Error(`Failed to find expense item radio button for "${transaction.expenseLabel}" after ${maxRetries} attempts`);
       }
     }
   }
 
-  // Find and select the radio button if the container was found
+  // Click the radio button if found
   if (expenseItemContainer) {
-    const radioButton = expenseItemContainer.querySelector('[data-automation-id="radioBtn"]');
-    if (radioButton) {
-      radioButton.click();
-      console.log(`Selected "${transaction.expenseLabel}" radio button`);
-    } else {
-      console.log('Could not find radio button inside expense item container');
+    expenseItemContainer.click();
+    console.log(`Selected "${transaction.expenseLabel}" radio button`);
+
+    console.log('Waiting for 1 second before selecting radio button');
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    try {
+      await waitForElement(
+        `[data-automation-label="${transaction.expenseLabel}"]`,
+        5000
+      );
+    } catch (error) {
+      console.error(`Error waiting for selected option: [data-automation-label="${transaction.expenseLabel}"]`);
     }
   }
 }
 
 async function fillAmountInput(formContainer, transaction) {
+  console.log('Filling amount input');
+
   // Set the amount (remove the $ symbol and convert to number)
   const amountInput = formContainer.querySelector('[data-automation-id="numericInput"]');
   if (!amountInput) {
@@ -311,40 +336,38 @@ async function fillAmountInput(formContainer, transaction) {
 }
 
 async function fillMemoInput(formContainer, transaction) {
-      // Set the memo (optional)
-      const memoLabel = Array.from(formContainer.querySelectorAll('[data-automation-id="formLabel"]'))
-      .find(label => label.textContent.trim() === 'Memo');
+  console.log('Filling memo input');
+
+  // Set the memo (optional)
+  const memoLabel = Array.from(formContainer.querySelectorAll('[data-automation-id="formLabel"]'))
+  .find(label => label.textContent.trim() === 'Memo');
     
-    if (memoLabel) {
-      console.log('Found memo label');
-      console.log(memoLabel);
-      
-      const memoInputId = memoLabel.getAttribute('for');
-      console.log('memoInputId', memoInputId);
+  if (memoLabel) {
+    console.log('Found memo label');
+    console.log(memoLabel);
+    
+    const memoInputId = memoLabel.getAttribute('for');
+    console.log('memoInputId', memoInputId);
 
-      const memoInput = formContainer.querySelector(`[id="${memoInputId}"]`);
-      console.log('memoInput', memoInput);
+    const memoInput = formContainer.querySelector(`[id="${memoInputId}"]`);
+    console.log('memoInput', memoInput);
+    
+    if (memoInput) {
+      // Focus the input first
+      memoInput.focus();
       
-      if (memoInput) {
-        // Focus the input first
-        memoInput.focus();
-        
-        // Set the value and trigger multiple events
-        memoInput.value = transaction.description;
-        memoInput.dispatchEvent(new Event('input', { bubbles: true }));
-        memoInput.dispatchEvent(new Event('change', { bubbles: true }));
-        memoInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
-        console.log('Set memo:', transaction.description);
-      } else {
-        console.log(`Could not find memo input with ID ${memoInputId}`);
-      }
+      // Set the value and trigger multiple events
+      memoInput.value = transaction.description;
+      memoInput.dispatchEvent(new Event('input', { bubbles: true }));
+      memoInput.dispatchEvent(new Event('change', { bubbles: true }));
+      memoInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+      console.log('Set memo:', transaction.description);
     } else {
-      console.log('Could not find memo label');
+      console.log(`Could not find memo input with ID ${memoInputId}`);
     }
-
-    // Add a delay before looking for the selected item
-    console.log('Waiting 2 seconds before looking for selected item...');
-    await new Promise(resolve => setTimeout(resolve, 2000));
+  } else {
+    console.log('Could not find memo label');
+  }
 }
 
 
@@ -365,6 +388,9 @@ async function fillTransactionForm(transaction) {
     await fillAmountInput(formContainer, transaction);
     await fillMemoInput(formContainer, transaction);
 
+    console.log('Waiting 1 second before clicking save');
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
     // Click the selected menu item on the left to save
     clickSelectedMenuItemToSave();
 
@@ -376,16 +402,27 @@ async function fillTransactionForm(transaction) {
 }
 
 // Helper function to wait for an element to appear in the DOM
-function waitForElement(selector, timeout = 10000) {
+function waitForElement(selector, timeout = 10000, alternateSelector = null) {
   return new Promise((resolve, reject) => {
     const startTime = Date.now();
 
     const checkElement = () => {
+      // Check for primary selector
       const element = document.querySelector(selector);
       if (element) {
         console.log(`Found element: ${selector}`);
         resolve(element);
         return;
+      }
+
+      // If alternate selector is provided, check for it
+      if (alternateSelector) {
+        const alternateElement = document.querySelector(alternateSelector);
+        if (alternateElement) {
+          console.log(`Found alternate element: ${alternateSelector}`);
+          resolve(alternateElement);
+          return;
+        }
       }
 
       if (Date.now() - startTime >= timeout) {
@@ -409,6 +446,7 @@ async function inputExpenseItemAndSearch(expenseItemInput, searchText) {
   console.log('Clicked on expense item search field');
   
   // Step 2: Input the search text and hit enter
+  console.log('Inputting search text:', searchText);
   expenseItemInput.value = searchText;
   expenseItemInput.dispatchEvent(new Event('input', { bubbles: true }));
   
@@ -435,7 +473,7 @@ async function inputExpenseItemAndSearch(expenseItemInput, searchText) {
   expenseItemInput.dispatchEvent(keydownEvent);
   console.log('Dispatched keydown event for Enter');
   
-  // 2. Then, dispatch a keypress event
+  // // 2. Then, dispatch a keypress event
   const keypressEvent = new KeyboardEvent('keypress', {
     key: 'Enter',
     code: 'Enter',
@@ -447,7 +485,7 @@ async function inputExpenseItemAndSearch(expenseItemInput, searchText) {
   expenseItemInput.dispatchEvent(keypressEvent);
   console.log('Dispatched keypress event for Enter');
   
-  // 3. Finally, dispatch a keyup event
+  // // 3. Finally, dispatch a keyup event
   const keyupEvent = new KeyboardEvent('keyup', {
     key: 'Enter',
     code: 'Enter',
@@ -459,7 +497,7 @@ async function inputExpenseItemAndSearch(expenseItemInput, searchText) {
   expenseItemInput.dispatchEvent(keyupEvent);
   console.log('Dispatched keyup event for Enter');
   
-  // 4. Also try the Return key sequence (for Mac)
+  // // 4. Also try the Return key sequence (for Mac)
   const returnKeydownEvent = new KeyboardEvent('keydown', {
     key: 'Return',
     code: 'Enter',
