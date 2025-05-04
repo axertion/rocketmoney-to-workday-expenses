@@ -73,7 +73,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const transactionsHTML = transactions.map(transaction => {
       const date = new Date(transaction.date);
-      const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`;
+      const formattedDate = date.toLocaleDateString('en-US', { 
+        weekday: 'short', 
+        month: 'short', 
+        day: 'numeric' 
+      });
       
       // Create options HTML with selected state
       const optionsWithSelection = expenseOptions
@@ -82,7 +86,9 @@ document.addEventListener('DOMContentLoaded', function() {
       
       return `
         <div class="transaction-row" data-transaction-id="${transaction.id}">
-          <div class="date-col">${formattedDate}</div>
+          <div class="date-col">
+            <input type="text" class="date-input" value="${formattedDate}" data-transaction-id="${transaction.id}" data-date="${date.toISOString()}" readonly>
+          </div>
           <div class="memo-col">
             <input type="text" class="memo-input" value="${transaction.description}" data-transaction-id="${transaction.id}">
           </div>
@@ -103,6 +109,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
     transactionsBody.innerHTML = transactionsHTML;
 
+    // Initialize datepickers
+    document.querySelectorAll('.date-input').forEach(input => {
+      const datepicker = new Datepicker(input, {
+        format: 'D, M d',
+        autohide: true,
+        startDate: new Date(input.dataset.date),
+        nextArrow: '<img src="icons/chevron-right.svg" alt="Next" class="datepicker-nav-icon">',
+        prevArrow: '<img src="icons/chevron-left.svg" alt="Previous" class="datepicker-nav-icon">',
+      });
+
+      input.addEventListener('changeDate', (e) => {
+        const date = e.detail.date;
+        const transactionId = input.dataset.transactionId;
+        const transaction = transactions.find(t => t.id === transactionId);
+        if (transaction) {
+          transaction.date = date.toISOString();
+          input.dataset.date = date.toISOString();
+          saveState(transactions);
+        }
+
+      });
+
+    });
+
     // Add change event listeners to all memo inputs
     document.querySelectorAll('.memo-input').forEach(input => {
       input.addEventListener('change', (e) => {
@@ -110,12 +140,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const newDescription = e.target.value;
         
         // Find and update the transaction in our dataset
-        const transaction = currentTransactions.find(t => t.id === transactionId);
+        const transaction = transactions.find(t => t.id === transactionId);
         if (transaction) {
           transaction.description = newDescription;
           
           // Save the updated transactions to storage
-          saveState(currentTransactions);
+          saveState(transactions);
         }
       });
     });
@@ -129,13 +159,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedLabel = selectedOption.text;
         
         // Find and update the transaction in our dataset
-        const transaction = currentTransactions.find(t => t.id === transactionId);
+        const transaction = transactions.find(t => t.id === transactionId);
         if (transaction) {
           transaction.expenseType = selectedValue;
           transaction.expenseLabel = selectedLabel;
           
           // Save the updated transactions to storage
-          saveState(currentTransactions);
+          saveState(transactions);
         }
       });
     });
