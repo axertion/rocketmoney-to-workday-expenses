@@ -90,4 +90,37 @@ function waitForElement(selector, timeout = 10000) {
 
     checkElement();
   });
+}
+
+function addToWorkday(transactions) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Wait for the expense report page to load
+      await waitForExpenseReportPage();
+
+      // Click the "Add Expense" button
+      const addExpenseButton = await waitForElement('button[data-automation-id="addExpenseButton"]');
+      addExpenseButton.click();
+
+      // Process each transaction
+      for (const transaction of transactions) {
+        // Wait for the expense form to load
+        await waitForElement('div[data-automation-id="expenseForm"]');
+
+        // Fill in the expense form
+        await fillExpenseForm(transaction);
+
+        // Click the Save button
+        const saveButton = await waitForElement('button[data-automation-id="saveButton"]');
+        saveButton.click();
+
+        // Wait for the save to complete
+        await waitForElement('div[data-automation-id="expenseItem"]');
+      }
+
+      resolve({ success: true });
+    } catch (error) {
+      reject(error);
+    }
+  });
 } 
