@@ -26,33 +26,71 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 async function processTransactions(transactions) {
   console.log(`Processing ${transactions.length} transactions`);
 
-  await clickEditExpenseReportButton();
-  
-  for (let i = 0; i < transactions.length; i++) {
-    const transaction = transactions[i];
-    console.log(`Processing transaction ${i + 1} of ${transactions.length}:`, transaction);
+  // Create and show the overlay
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  `;
+
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    background-color: white;
+    padding: 24px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-size: 16px;
+    color: #333;
+  `;
+  modal.textContent = 'Adding transactions to expense report...';
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  try {
+    await clickEditExpenseReportButton();
     
-    try {
-      // First, click the Add button to add a new expense line
-      await clickAddButton();
+    for (let i = 0; i < transactions.length; i++) {
+      const transaction = transactions[i];
+      console.log(`Processing transaction ${i + 1} of ${transactions.length}:`, transaction);
       
-      // Then fill in the transaction form
-      await fillTransactionForm(transaction);
-      
-      console.log(`Successfully processed transaction ${i + 1}`);
-      
-      // Add a delay between transactions to allow the UI to update
-      if (i < transactions.length - 1) {
-        console.log('Waiting before processing next transaction...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
+      try {
+        // First, click the Add button to add a new expense line
+        await clickAddButton();
+        
+        // Then fill in the transaction form
+        await fillTransactionForm(transaction);
+        
+        console.log(`Successfully processed transaction ${i + 1}`);
+        
+        // Add a delay between transactions to allow the UI to update
+        if (i < transactions.length - 1) {
+          console.log('Waiting before processing next transaction...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      } catch (error) {
+        console.error(`Error processing transaction ${i + 1}:`, error);
+        throw new Error(`Failed to process transaction ${i + 1}: ${error.message}`);
       }
-    } catch (error) {
-      console.error(`Error processing transaction ${i + 1}:`, error);
-      throw new Error(`Failed to process transaction ${i + 1}: ${error.message}`);
     }
+    
+    // Remove the overlay when done
+    overlay.remove();
+    return true;
+  } catch (error) {
+    // Remove the overlay in case of error
+    overlay.remove();
+    throw error;
   }
-  
-  return true;
 }
 
 async function setNativeValue(element, value) {
@@ -542,4 +580,35 @@ async function inputExpenseItemAndSearch(expenseItemInput, searchText) {
   
   // Add a longer delay to allow the UI to respond
   await new Promise(resolve => setTimeout(resolve, 2000));
+}
+
+async function addToWorkday(transactions) {
+  try {
+    // Wait for the expense report page to load
+    await waitForExpenseReportPage();
+
+    // Click the "Add Expense" button
+    const addExpenseButton = await waitForElement('button[data-automation-id="addExpenseButton"]');
+    addExpenseButton.click();
+
+    // Process each transaction
+    for (const transaction of transactions) {
+      // Wait for the expense form to load
+      await waitForElement('div[data-automation-id="expenseForm"]');
+
+      // Fill in the expense form
+      await fillExpenseForm(transaction);
+
+      // Click the Save button
+      const saveButton = await waitForElement('button[data-automation-id="saveButton"]');
+      saveButton.click();
+
+      // Wait for the save to complete
+      await waitForElement('div[data-automation-id="expenseItem"]');
+    }
+
+    return { success: true };
+  } catch (error) {
+    throw error;
+  }
 } 
