@@ -20,10 +20,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
     return true; // Will respond asynchronously
   }
+
+  if (request.action === 'checkProcessing') {
+    sendResponse(window.isProcessingTransactions || false);
+    return false; // Synchronous response
+  }
 });
 
 // Function to process all transactions
 async function processTransactions(transactions) {
+  // Check if processing is already running
+  if (window.isProcessingTransactions) {
+    console.log('Transaction processing is already in progress');
+    return;
+  }
+
+  // Set the flag to indicate processing has started
+  window.isProcessingTransactions = true;
+
   console.log(`Processing ${transactions.length} transactions`);
 
   // Create and show the overlay
@@ -50,9 +64,66 @@ async function processTransactions(transactions) {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     font-size: 16px;
     color: #333;
+    min-width: 300px;
   `;
-  modal.textContent = 'Adding transactions to expense report...';
 
+  const message = document.createElement('div');
+  message.textContent = 'Adding transactions to expense report...';
+  message.style.marginBottom = '16px';
+
+  const progressContainer = document.createElement('div');
+  progressContainer.style.cssText = `
+    width: 100%;
+    height: 4px;
+    background-color: #e0e0e0;
+    border-radius: 2px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  `;
+
+  const progressBar = document.createElement('div');
+  progressBar.style.cssText = `
+    width: 0%;
+    height: 100%;
+    background-color: #4CAF50;
+    transition: width 0.3s ease;
+  `;
+
+  const progressText = document.createElement('div');
+  progressText.style.cssText = `
+    font-size: 14px;
+    color: #666;
+    text-align: center;
+  `;
+  progressText.textContent = `0 of ${transactions.length} completed`;
+
+  const doneButton = document.createElement('button');
+  doneButton.style.cssText = `
+    display: none;
+    padding: 8px 24px;
+    border-radius: 24px;
+    font-size: 14px;
+    font-weight: 500;
+    height: 40px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    background-color: #000;
+    color: white;
+    width: 100%;
+  `;
+  doneButton.textContent = 'Done';
+  doneButton.onclick = () => {
+    overlay.remove();
+    window.isProcessingTransactions = false;
+  };
+
+  progressContainer.appendChild(progressBar);
+  modal.appendChild(message);
+  modal.appendChild(progressContainer);
+  modal.appendChild(progressText);
+  modal.appendChild(doneButton);
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
 
@@ -72,6 +143,11 @@ async function processTransactions(transactions) {
         
         console.log(`Successfully processed transaction ${i + 1}`);
         
+        // Update progress
+        const progress = ((i + 1) / transactions.length) * 100;
+        progressBar.style.width = `${progress}%`;
+        progressText.textContent = `${i + 1} of ${transactions.length} completed`;
+        
         // Add a delay between transactions to allow the UI to update
         if (i < transactions.length - 1) {
           console.log('Waiting before processing next transaction...');
@@ -83,12 +159,39 @@ async function processTransactions(transactions) {
       }
     }
     
-    // Remove the overlay when done
-    overlay.remove();
+    // Show success state
+    message.textContent = `${transactions.length} transactions successfully added`;
+    message.style.cssText = `
+      font-size: 18px;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: #333;
+    `;
+    
+    const successMessage = document.createElement('div');
+    successMessage.style.cssText = `
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 16px;
+      text-align: center;
+    `;
+    successMessage.textContent = 'Review everything to make sure it looks good, then submit your expense report.';
+    
+    // Hide progress elements
+    progressContainer.style.display = 'none';
+    progressText.style.display = 'none';
+    
+    // Show done button
+    doneButton.style.display = 'block';
+    
+    // Insert success message before the done button
+    modal.insertBefore(successMessage, doneButton);
+    
     return true;
   } catch (error) {
     // Remove the overlay in case of error
     overlay.remove();
+    window.isProcessingTransactions = false;
     throw error;
   }
 }

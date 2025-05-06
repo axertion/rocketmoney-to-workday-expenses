@@ -1,20 +1,6 @@
 // Listen for messages from the popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'extractTransactions') {
-    // Log the page structure to help debug
-    console.log('Page structure:', document.body.innerHTML);
-    
-    // Try to find any transaction-related elements
-    const allElements = document.querySelectorAll('*');
-    console.log('All elements with classes:', Array.from(allElements)
-      .filter(el => el.className)
-      .map(el => ({
-        tag: el.tagName,
-        class: el.className,
-        text: el.textContent.substring(0, 50)
-      }))
-    );
-
     extractTransactions()
       .then(transactions => sendResponse({ transactions }))
       .catch(error => sendResponse({ error: error.message }));

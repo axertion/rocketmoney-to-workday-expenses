@@ -596,7 +596,7 @@ h1 {
   padding: 48px 24px;
   background-color: #f8f8f8;
   border-radius: 12px;
-  margin: 20px;
+  margin: 0 20px 20px 20px;
   flex: 1;
 }
 

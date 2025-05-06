@@ -216,10 +216,6 @@ document.addEventListener('DOMContentLoaded', function() {
       // Get the active tab
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       
-      if (!tab.url.includes('rocketmoney.com')) {
-        throw new Error('Please navigate to RocketMoney.com first');
-      }
-
       // Send message to content script
       const response = await chrome.tabs.sendMessage(tab.id, {
         action: 'extractTransactions'
@@ -247,15 +243,25 @@ document.addEventListener('DOMContentLoaded', function() {
       addToExpenseBtn.disabled = false;
     } catch (error) {
       transactionsBody.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+    } finally {
+      extractBtn.disabled = false;
     }
   }
 
   // Extract button click handler
   extractBtn.addEventListener('click', async () => {
-    extractBtn.disabled = true;
-    transactionsBody.innerHTML = '<div class="loading">Extracting transactions...</div>';
-
     try {
+      // Get the active tab
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      
+      if (!tab.url.includes('app.rocketmoney.com/transactions')) {
+        alert('Go to Rocket Money transactions and filter to the ones you want to expense, then click Get transactions.');
+        return;
+      }
+
+      extractBtn.disabled = true;
+      transactionsBody.innerHTML = '<div class="loading">Extracting transactions...</div>';
+
       await extractTransactions();
     } catch (error) {
       transactionsBody.innerHTML = `<div class="error">Error: ${error.message}</div>`;
@@ -278,18 +284,27 @@ document.addEventListener('DOMContentLoaded', function() {
         throw new Error('Please navigate to a Workday expense report page');
       }
 
-      // Send message to content script
-      const response = await chrome.tabs.sendMessage(tab.id, {
+      // Check if processing is already running
+      const isProcessing = await chrome.tabs.sendMessage(tab.id, {
+        action: 'checkProcessing'
+      });
+
+      if (isProcessing) {
+        console.log('Transaction processing is already in progress');
+        return;
+      }
+
+      // Store the transactions in chrome.storage so the content script can access them
+      await chrome.storage.local.set({ pendingTransactions: currentTransactions });
+
+      // Close the popup window before sending the message
+      window.close();
+
+      // Send message to content script after closing the popup
+      chrome.tabs.sendMessage(tab.id, {
         action: 'addToWorkday',
         transactions: currentTransactions
       });
-
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      // Show success message
-      alert('Transactions added to expense report successfully!');
     } catch (error) {
       console.error('Error adding transactions to Workday:', error);
       
