@@ -132,17 +132,93 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize autocomplete for expense inputs
     document.querySelectorAll('.expense-input').forEach(input => {
-      const dropdown = input.nextElementSibling;
+      const dropdownPortal = document.getElementById('dropdownPortal');
+      let dropdown = null;
       
-      input.addEventListener('input', (e) => {
-        const searchTerm = e.target.value.toLowerCase();
+      function createDropdown() {
+        dropdown = document.createElement('div');
+        dropdown.className = 'expense-dropdown';
+        dropdownPortal.appendChild(dropdown);
+
+        // Add click handler to dropdown
+        dropdown.addEventListener('click', (e) => {
+          // Handle delete button clicks
+          if (e.target.closest('.delete-option-btn')) {
+            e.stopPropagation();
+            const option = e.target.closest('.expense-option');
+            const value = option.dataset.value;
+            
+            expenseOptions = expenseOptions.filter(opt => opt.value !== value);
+            saveExpenseOptions(expenseOptions);
+            
+            updateDropdownContent();
+            return;
+          }
+          
+          const option = e.target.closest('.expense-option');
+          if (!option) return;
+          
+          const transactionId = input.dataset.transactionId;
+          const transaction = transactions.find(t => t.id === transactionId);
+          
+          if (option.classList.contains('create-new')) {
+            const newOption = addExpenseOption(option.dataset.label);
+            if (transaction) {
+              transaction.expenseType = newOption.value;
+              transaction.expenseLabel = newOption.label;
+              input.value = newOption.label;
+            }
+          } else {
+            if (transaction) {
+              transaction.expenseType = option.dataset.value;
+              transaction.expenseLabel = option.dataset.label;
+              input.value = option.dataset.label;
+            }
+          }
+          
+          saveState(transactions);
+          hideDropdown();
+        });
+
+        return dropdown;
+      }
+
+      function updateDropdownPosition() {
+        if (!dropdown) return;
+        
+        const inputRect = input.getBoundingClientRect();
+        const portalRect = dropdownPortal.getBoundingClientRect();
+        
+        dropdown.style.position = 'fixed';
+        dropdown.style.top = `${inputRect.bottom + 4}px`;
+        dropdown.style.left = `${inputRect.left}px`;
+        dropdown.style.width = `${inputRect.width}px`;
+      }
+
+      function showDropdown() {
+        if (!dropdown) {
+          dropdown = createDropdown();
+        }
+        updateDropdownPosition();
+        dropdown.style.display = 'block';
+      }
+
+      function hideDropdown() {
+        if (dropdown) {
+          dropdown.style.display = 'none';
+        }
+      }
+
+      function updateDropdownContent() {
+        if (!dropdown) return;
+        
+        const searchTerm = input.value.toLowerCase();
         const matchingOptions = expenseOptions
           .filter(option => option.label.toLowerCase().includes(searchTerm))
           .sort((a, b) => a.label.localeCompare(b.label));
         
         let dropdownHTML = '';
         
-        // Add matching options
         if (matchingOptions.length > 0) {
           dropdownHTML = matchingOptions.map(option => `
             <div class="expense-option" data-value="${option.value}" data-label="${option.label}">
@@ -154,7 +230,6 @@ document.addEventListener('DOMContentLoaded', function() {
           `).join('');
         }
         
-        // Add Create option if there's text in the input and no exact match
         if (searchTerm && !expenseOptions.some(option => 
           option.label.toLowerCase() === searchTerm.toLowerCase()
         )) {
@@ -167,6 +242,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         dropdown.innerHTML = dropdownHTML;
         dropdown.style.display = dropdownHTML ? 'block' : 'none';
+      }
+      
+      input.addEventListener('input', (e) => {
+        updateDropdownContent();
+        showDropdown();
       });
 
       // Add keydown event listener for Enter key
@@ -176,49 +256,49 @@ document.addEventListener('DOMContentLoaded', function() {
           const searchTerm = input.value.trim();
           if (!searchTerm) return;
 
-          const matchingOptions = expenseOptions.filter(option => 
-            option.label.toLowerCase().includes(searchTerm.toLowerCase())
-          );
+          // Get the first option from the dropdown
+          const firstOption = dropdown?.querySelector('.expense-option');
+          if (firstOption) {
+            const transactionId = input.dataset.transactionId;
+            const transaction = transactions.find(t => t.id === transactionId);
 
-          const transactionId = input.dataset.transactionId;
-          const transaction = transactions.find(t => t.id === transactionId);
-
-          if (matchingOptions.length > 0) {
-            // Select the first matching option
-            const firstOption = matchingOptions[0];
-            if (transaction) {
-              transaction.expenseType = firstOption.value;
-              transaction.expenseLabel = firstOption.label;
-              input.value = firstOption.label;
+            if (firstOption.classList.contains('create-new')) {
+              const newOption = addExpenseOption(firstOption.dataset.label);
+              if (transaction) {
+                transaction.expenseType = newOption.value;
+                transaction.expenseLabel = newOption.label;
+                input.value = newOption.label;
+              }
+            } else {
+              if (transaction) {
+                transaction.expenseType = firstOption.dataset.value;
+                transaction.expenseLabel = firstOption.dataset.label;
+                input.value = firstOption.dataset.label;
+              }
             }
-          } else {
-            // Create new option
-            const newOption = addExpenseOption(searchTerm);
-            if (transaction) {
-              transaction.expenseType = newOption.value;
-              transaction.expenseLabel = newOption.label;
-              input.value = newOption.label;
-            }
+            
+            saveState(transactions);
+            hideDropdown();
           }
-
-          saveState(transactions);
-          dropdown.style.display = 'none';
         }
       });
-      
+
       input.addEventListener('focus', () => {
         // Store the current value to restore on blur
         input.dataset.selectedValue = input.value;
         // Clear the input to show all options
         input.value = '';
-        
+        // Create and show dropdown if it doesn't exist
+        if (!dropdown) {
+          dropdown = createDropdown();
+        }
+        // Show all options
         const matchingOptions = expenseOptions
           .filter(option => option.label.toLowerCase().includes(''))
           .sort((a, b) => a.label.localeCompare(b.label));
         
         let dropdownHTML = '';
         
-        // Add all options since search is empty
         if (matchingOptions.length > 0) {
           dropdownHTML = matchingOptions.map(option => `
             <div class="expense-option" data-value="${option.value}" data-label="${option.label}">
@@ -231,62 +311,28 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         dropdown.innerHTML = dropdownHTML;
-        dropdown.style.display = dropdownHTML ? 'block' : 'none';
+        showDropdown();
       });
       
       input.addEventListener('blur', () => {
-        // Delay hiding the dropdown to allow for option selection
         setTimeout(() => {
-          dropdown.style.display = 'none';
-          // Restore the selected value if no new option was selected
+          hideDropdown();
           if (input.dataset.selectedValue && !input.value) {
             input.value = input.dataset.selectedValue;
           }
-          // Clear the stored value
           delete input.dataset.selectedValue;
         }, 200);
       });
-      
-      dropdown.addEventListener('click', (e) => {
-        // Handle delete button clicks
-        if (e.target.closest('.delete-option-btn')) {
-          e.stopPropagation(); // Prevent the option click handler from firing
-          const option = e.target.closest('.expense-option');
-          const value = option.dataset.value;
-          
-          // Remove the option from expenseOptions
-          expenseOptions = expenseOptions.filter(opt => opt.value !== value);
-          saveExpenseOptions(expenseOptions);
-          
-          // Update the dropdown
-          input.dispatchEvent(new Event('input'));
-          return;
-        }
-        
-        const option = e.target.closest('.expense-option');
-        if (!option) return;
-        
-        const transactionId = input.dataset.transactionId;
-        const transaction = transactions.find(t => t.id === transactionId);
-        
-        if (option.classList.contains('create-new')) {
-          const newOption = addExpenseOption(option.dataset.label);
-          if (transaction) {
-            transaction.expenseType = newOption.value;
-            transaction.expenseLabel = newOption.label;
-            input.value = newOption.label;
+
+      // Update dropdown position on scroll
+      const tableBody = document.querySelector('.table-body');
+      if (tableBody) {
+        tableBody.addEventListener('scroll', () => {
+          if (dropdown && dropdown.style.display === 'block') {
+            updateDropdownPosition();
           }
-        } else {
-          if (transaction) {
-            transaction.expenseType = option.dataset.value;
-            transaction.expenseLabel = option.dataset.label;
-            input.value = option.dataset.label;
-          }
-        }
-        
-        saveState(transactions);
-        dropdown.style.display = 'none';
-      });
+        });
+      }
     });
 
     // Add change event listeners to all memo inputs
