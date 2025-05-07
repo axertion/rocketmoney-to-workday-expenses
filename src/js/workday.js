@@ -213,9 +213,10 @@ async function processTransactions(transactions) {
     `;
     successMessage.textContent = 'Review everything to make sure it looks good, then submit your expense report.';
     
-    // Hide progress elements
+    // Hide progress elements and cancel button
     progressContainer.style.display = 'none';
     progressText.style.display = 'none';
+    cancelButton.style.display = 'none';
     
     // Show done button
     doneButton.style.display = 'block';
