@@ -119,10 +119,35 @@ async function processTransactions(transactions) {
     window.isProcessingTransactions = false;
   };
 
+  const cancelButton = document.createElement('button');
+  cancelButton.style.cssText = `
+    padding: 8px 24px;
+    border-radius: 24px;
+    font-size: 14px;
+    font-weight: 500;
+    height: 40px;
+    border: 1px solid #e0e0e0;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    background-color: white;
+    color: #333;
+    width: 100%;
+    margin-top: 8px;
+  `;
+  cancelButton.textContent = 'Cancel';
+  cancelButton.onclick = () => {
+    overlay.remove();
+    window.isProcessingTransactions = false;
+    // Throw an error to stop the processing
+    throw new Error('Processing cancelled by user');
+  };
+
   progressContainer.appendChild(progressBar);
   modal.appendChild(message);
   modal.appendChild(progressContainer);
   modal.appendChild(progressText);
+  modal.appendChild(cancelButton);
   modal.appendChild(doneButton);
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
@@ -131,12 +156,23 @@ async function processTransactions(transactions) {
     await clickEditExpenseReportButton();
     
     for (let i = 0; i < transactions.length; i++) {
+      // Check if processing was cancelled
+      if (!window.isProcessingTransactions) {
+        console.log('Transaction processing was cancelled');
+        throw new Error('Processing cancelled by user');
+      }
+
       const transaction = transactions[i];
       console.log(`Processing transaction ${i + 1} of ${transactions.length}:`, transaction);
       
       try {
         // First, click the Add button to add a new expense line
         await clickAddButton();
+        
+        // Check if processing was cancelled before filling form
+        if (!window.isProcessingTransactions) {
+          throw new Error('Processing cancelled by user');
+        }
         
         // Then fill in the transaction form
         await fillTransactionForm(transaction);
@@ -155,7 +191,7 @@ async function processTransactions(transactions) {
         }
       } catch (error) {
         console.error(`Error processing transaction ${i + 1}:`, error);
-        throw new Error(`Failed to process transaction ${i + 1}: ${error.message}`);
+        throw error; // Re-throw to stop processing
       }
     }
     

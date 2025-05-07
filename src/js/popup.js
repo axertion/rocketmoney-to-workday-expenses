@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
           <div class="amount-col">${transaction.amount}</div>
           <div class="delete-col">
             <button class="delete-btn" title="Delete transaction">
-              <img src="icons/trash.svg" alt="Delete" class="delete-icon">
+              <img src="src/images/trash.svg" alt="Delete" class="delete-icon">
             </button>
           </div>
         </div>
@@ -114,8 +114,8 @@ document.addEventListener('DOMContentLoaded', function() {
         format: 'D, M d',
         autohide: true,
         startDate: new Date(input.dataset.date),
-        nextArrow: '<img src="icons/chevron-right.svg" alt="Next" class="datepicker-nav-icon">',
-        prevArrow: '<img src="icons/chevron-left.svg" alt="Previous" class="datepicker-nav-icon">',
+        nextArrow: '<img src="src/images/chevron-right.svg" alt="Next" class="datepicker-nav-icon">',
+        prevArrow: '<img src="src/images/chevron-left.svg" alt="Previous" class="datepicker-nav-icon">',
       });
 
       input.addEventListener('changeDate', (e) => {
@@ -224,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="expense-option" data-value="${option.value}" data-label="${option.label}">
               <span class="option-label">${option.label}</span>
               <button class="delete-option-btn" title="Delete option">
-                <img src="icons/trash.svg" alt="Delete" class="delete-icon">
+                <img src="src/images/trash.svg" alt="Delete" class="delete-icon">
               </button>
             </div>
           `).join('');
@@ -304,7 +304,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="expense-option" data-value="${option.value}" data-label="${option.label}">
               <span class="option-label">${option.label}</span>
               <button class="delete-option-btn" title="Delete option">
-                <img src="icons/trash.svg" alt="Delete" class="delete-icon">
+                <img src="src/images/trash.svg" alt="Delete" class="delete-icon">
               </button>
             </div>
           `).join('');

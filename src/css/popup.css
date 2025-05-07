@@ -503,7 +503,7 @@ h1 {
 
 .expense-select:hover {
   border-bottom: 1px dashed #666;
-  background-image: url('icons/chevron-down.svg');
+  background-image: url('src/images/chevron-down.svg');
   background-size: 16px;
 }
 
@@ -653,11 +653,11 @@ h1 {
 }
 
 .datepicker-controls .next-button::after {
-  background-image: url('icons/chevron-right.svg');
+  background-image: url('src/images/chevron-right.svg');
 }
 
 .datepicker-controls .prev-button::after {
-  background-image: url('icons/chevron-left.svg');
+  background-image: url('src/images/chevron-left.svg');
 }
 
 .datepicker-controls .next-button:hover,

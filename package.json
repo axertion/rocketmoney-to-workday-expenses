@@ -2,11 +2,7 @@
   "name": "rocketmoney-transaction-extractor",
   "version": "1.0.0",
   "description": "Chrome extension to extract RocketMoney transactions",
-  "scripts": {
-    "generate-icons": "node generate_icons.js"
-  },
   "dependencies": {
-    "@tarekraafat/autocomplete.js": "^10.2.9",
     "canvas": "^2.11.2"
   },
   "devDependencies": {

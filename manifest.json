@@ -15,19 +15,19 @@
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
-      "16": "icons/icon16.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
+      "16": "src/images/icon16.png",
+      "48": "src/images/icon48.png",
+      "128": "src/images/icon128.png"
     }
   },
   "content_scripts": [
     {
       "matches": ["https://app.rocketmoney.com/*"],
-      "js": ["content.js"]
+      "js": ["src/js/content.js"]
     },
     {
       "matches": ["https://*.myworkday.com/*"],
-      "js": ["workday.js"]
+      "js": ["src/js/workday.js"]
     }
   ],
   "web_accessible_resources": [{
@@ -35,8 +35,8 @@
     "matches": ["<all_urls>"]
   }],
   "icons": {
-    "16": "icons/icon16.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
+    "16": "src/images/icon16.png",
+    "48": "src/images/icon48.png",
+    "128": "src/images/icon128.png"
   }
 } 
