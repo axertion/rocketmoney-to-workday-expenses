@@ -415,6 +415,13 @@ async function fillExpenseItemInput(formContainer, transaction) {
       // Input the expense label and trigger the search
       await inputExpenseItemAndSearch(expenseItemInput, transaction.expenseLabel);
       
+      // Check if "No matches found" message exists
+      const noMatchesElement = document.querySelector('[data-automation-id="promptTitle"][title="No matches found"]');
+      if (noMatchesElement) {
+        console.log(`No matches found for "${transaction.expenseLabel}", skipping expense item selection`);
+        return; // Skip expense item selection and continue with next field
+      }
+      
       // Wait for the specific expense item radio button to appear
       expenseItemContainer = await waitForElement(
         `[data-automation-label="${transaction.expenseLabel}"]`,
