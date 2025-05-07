@@ -207,14 +207,18 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       
       input.addEventListener('focus', () => {
-        const searchTerm = input.value.toLowerCase();
+        // Store the current value to restore on blur
+        input.dataset.selectedValue = input.value;
+        // Clear the input to show all options
+        input.value = '';
+        
         const matchingOptions = expenseOptions
-          .filter(option => option.label.toLowerCase().includes(searchTerm))
+          .filter(option => option.label.toLowerCase().includes(''))
           .sort((a, b) => a.label.localeCompare(b.label));
         
         let dropdownHTML = '';
         
-        // Add matching options
+        // Add all options since search is empty
         if (matchingOptions.length > 0) {
           dropdownHTML = matchingOptions.map(option => `
             <div class="expense-option" data-value="${option.value}" data-label="${option.label}">
@@ -226,17 +230,6 @@ document.addEventListener('DOMContentLoaded', function() {
           `).join('');
         }
         
-        // Add Create option if there's text in the input and no exact match
-        if (searchTerm && !expenseOptions.some(option => 
-          option.label.toLowerCase() === searchTerm.toLowerCase()
-        )) {
-          dropdownHTML += `
-            <div class="expense-option create-new" data-label="${input.value.trim()}">
-              Create "${input.value.trim()}"
-            </div>
-          `;
-        }
-        
         dropdown.innerHTML = dropdownHTML;
         dropdown.style.display = dropdownHTML ? 'block' : 'none';
       });
@@ -245,6 +238,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Delay hiding the dropdown to allow for option selection
         setTimeout(() => {
           dropdown.style.display = 'none';
+          // Restore the selected value if no new option was selected
+          if (input.dataset.selectedValue && !input.value) {
+            input.value = input.dataset.selectedValue;
+          }
+          // Clear the stored value
+          delete input.dataset.selectedValue;
         }, 200);
       });
       
