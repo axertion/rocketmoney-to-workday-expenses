@@ -4,32 +4,40 @@ document.addEventListener('DOMContentLoaded', function() {
   const transactionsBody = document.getElementById('transactionsBody');
 
   let currentTransactions = [];
+  let expenseOptions = [];
 
   // Load saved state when popup opens
-  chrome.storage.local.get(['transactions'], function(result) {
+  chrome.storage.local.get(['transactions', 'expenseOptions'], function(result) {
     if (result.transactions) {
       currentTransactions = result.transactions;
       displayTransactions(result.transactions);
       addToExpenseBtn.disabled = false;
     }
+    if (result.expenseOptions) {
+      expenseOptions = result.expenseOptions;
+    } else {
+      // Initialize with default options if none exist
+      expenseOptions = [
+        { value: 'team-meals', label: 'Team Meals' },
+        { value: 'travel-meals-individual', label: 'Travel Meals - Individual' },
+        { value: 'travel-meals-group', label: 'Travel Meals - Group' }
+      ];
+      saveExpenseOptions(expenseOptions);
+    }
   });
 
-  // Get expense type options
-  function getExpenseOptions() {
-    return [
-      {
-        value: 'team-meals',
-        label: 'Team Meals'
-      },
-      {
-        value: 'travel-meals-individual',
-        label: 'Travel Meals - Individual'
-      },
-      {
-        value: 'travel-meals-group',
-        label: 'Travel Meals - Group'
-      },
-    ];
+  // Save expense options to storage
+  function saveExpenseOptions(options) {
+    chrome.storage.local.set({ expenseOptions: options });
+  }
+
+  // Add new expense option
+  function addExpenseOption(label) {
+    const value = label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const newOption = { value, label };
+    expenseOptions.push(newOption);
+    saveExpenseOptions(expenseOptions);
+    return newOption;
   }
 
   function displayTransactions(transactions) {
@@ -42,11 +50,10 @@ document.addEventListener('DOMContentLoaded', function() {
           <p>Go to <a href="#" class="rocket-money-link">Rocket Money transactions</a> and filter to the ones you want to expense, then click <strong>Get transactions</strong>.</p>
         </div>`;
 
-      // Add click handler for the Rocket Money link
       document.querySelector('.rocket-money-link').addEventListener('click', (e) => {
         e.preventDefault();
         chrome.tabs.update({ url: 'https://app.rocketmoney.com/transactions' });
-        window.close(); // Close the popup after navigation
+        window.close();
       });
       
       return;
@@ -66,10 +73,6 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
 
     const transactionsBody = document.getElementById('transactionsBody');
-    const expenseOptions = getExpenseOptions();
-    const optionsHtml = expenseOptions
-      .map(option => `<option value="${option.value}">${option.label}</option>`)
-      .join('');
 
     const transactionsHTML = transactions.map(transaction => {
       const date = new Date(transaction.date);
@@ -78,11 +81,6 @@ document.addEventListener('DOMContentLoaded', function() {
         month: 'short', 
         day: 'numeric' 
       });
-      
-      // Create options HTML with selected state
-      const optionsWithSelection = expenseOptions
-        .map(option => `<option value="${option.value}" ${transaction.expenseType === option.value ? 'selected' : ''}>${option.label}</option>`)
-        .join('');
       
       return `
         <div class="transaction-row" data-transaction-id="${transaction.id}">
@@ -93,9 +91,10 @@ document.addEventListener('DOMContentLoaded', function() {
             <input type="text" class="memo-input" value="${transaction.description}" data-transaction-id="${transaction.id}">
           </div>
           <div class="expense-col">
-            <select class="expense-select" data-transaction-id="${transaction.id}">
-              ${optionsWithSelection}
-            </select>
+            <div class="expense-input-container">
+              <input type="text" class="expense-input" data-transaction-id="${transaction.id}" value="${transaction.expenseLabel || ''}" placeholder="Select or type to create...">
+              <div class="expense-dropdown"></div>
+            </div>
           </div>
           <div class="amount-col">${transaction.amount}</div>
           <div class="delete-col">
@@ -128,9 +127,167 @@ document.addEventListener('DOMContentLoaded', function() {
           input.dataset.date = date.toISOString();
           saveState(transactions);
         }
+      });
+    });
 
+    // Initialize autocomplete for expense inputs
+    document.querySelectorAll('.expense-input').forEach(input => {
+      const dropdown = input.nextElementSibling;
+      
+      input.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const matchingOptions = expenseOptions
+          .filter(option => option.label.toLowerCase().includes(searchTerm))
+          .sort((a, b) => a.label.localeCompare(b.label));
+        
+        let dropdownHTML = '';
+        
+        // Add matching options
+        if (matchingOptions.length > 0) {
+          dropdownHTML = matchingOptions.map(option => `
+            <div class="expense-option" data-value="${option.value}" data-label="${option.label}">
+              <span class="option-label">${option.label}</span>
+              <button class="delete-option-btn" title="Delete option">
+                <img src="icons/trash.svg" alt="Delete" class="delete-icon">
+              </button>
+            </div>
+          `).join('');
+        }
+        
+        // Add Create option if there's text in the input and no exact match
+        if (searchTerm && !expenseOptions.some(option => 
+          option.label.toLowerCase() === searchTerm.toLowerCase()
+        )) {
+          dropdownHTML += `
+            <div class="expense-option create-new" data-label="${input.value.trim()}">
+              Create "${input.value.trim()}"
+            </div>
+          `;
+        }
+        
+        dropdown.innerHTML = dropdownHTML;
+        dropdown.style.display = dropdownHTML ? 'block' : 'none';
       });
 
+      // Add keydown event listener for Enter key
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const searchTerm = input.value.trim();
+          if (!searchTerm) return;
+
+          const matchingOptions = expenseOptions.filter(option => 
+            option.label.toLowerCase().includes(searchTerm.toLowerCase())
+          );
+
+          const transactionId = input.dataset.transactionId;
+          const transaction = transactions.find(t => t.id === transactionId);
+
+          if (matchingOptions.length > 0) {
+            // Select the first matching option
+            const firstOption = matchingOptions[0];
+            if (transaction) {
+              transaction.expenseType = firstOption.value;
+              transaction.expenseLabel = firstOption.label;
+              input.value = firstOption.label;
+            }
+          } else {
+            // Create new option
+            const newOption = addExpenseOption(searchTerm);
+            if (transaction) {
+              transaction.expenseType = newOption.value;
+              transaction.expenseLabel = newOption.label;
+              input.value = newOption.label;
+            }
+          }
+
+          saveState(transactions);
+          dropdown.style.display = 'none';
+        }
+      });
+      
+      input.addEventListener('focus', () => {
+        const searchTerm = input.value.toLowerCase();
+        const matchingOptions = expenseOptions
+          .filter(option => option.label.toLowerCase().includes(searchTerm))
+          .sort((a, b) => a.label.localeCompare(b.label));
+        
+        let dropdownHTML = '';
+        
+        // Add matching options
+        if (matchingOptions.length > 0) {
+          dropdownHTML = matchingOptions.map(option => `
+            <div class="expense-option" data-value="${option.value}" data-label="${option.label}">
+              <span class="option-label">${option.label}</span>
+              <button class="delete-option-btn" title="Delete option">
+                <img src="icons/trash.svg" alt="Delete" class="delete-icon">
+              </button>
+            </div>
+          `).join('');
+        }
+        
+        // Add Create option if there's text in the input and no exact match
+        if (searchTerm && !expenseOptions.some(option => 
+          option.label.toLowerCase() === searchTerm.toLowerCase()
+        )) {
+          dropdownHTML += `
+            <div class="expense-option create-new" data-label="${input.value.trim()}">
+              Create "${input.value.trim()}"
+            </div>
+          `;
+        }
+        
+        dropdown.innerHTML = dropdownHTML;
+        dropdown.style.display = dropdownHTML ? 'block' : 'none';
+      });
+      
+      input.addEventListener('blur', () => {
+        // Delay hiding the dropdown to allow for option selection
+        setTimeout(() => {
+          dropdown.style.display = 'none';
+        }, 200);
+      });
+      
+      dropdown.addEventListener('click', (e) => {
+        // Handle delete button clicks
+        if (e.target.closest('.delete-option-btn')) {
+          e.stopPropagation(); // Prevent the option click handler from firing
+          const option = e.target.closest('.expense-option');
+          const value = option.dataset.value;
+          
+          // Remove the option from expenseOptions
+          expenseOptions = expenseOptions.filter(opt => opt.value !== value);
+          saveExpenseOptions(expenseOptions);
+          
+          // Update the dropdown
+          input.dispatchEvent(new Event('input'));
+          return;
+        }
+        
+        const option = e.target.closest('.expense-option');
+        if (!option) return;
+        
+        const transactionId = input.dataset.transactionId;
+        const transaction = transactions.find(t => t.id === transactionId);
+        
+        if (option.classList.contains('create-new')) {
+          const newOption = addExpenseOption(option.dataset.label);
+          if (transaction) {
+            transaction.expenseType = newOption.value;
+            transaction.expenseLabel = newOption.label;
+            input.value = newOption.label;
+          }
+        } else {
+          if (transaction) {
+            transaction.expenseType = option.dataset.value;
+            transaction.expenseLabel = option.dataset.label;
+            input.value = option.dataset.label;
+          }
+        }
+        
+        saveState(transactions);
+        dropdown.style.display = 'none';
+      });
     });
 
     // Add change event listeners to all memo inputs
@@ -139,32 +296,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const transactionId = e.target.dataset.transactionId;
         const newDescription = e.target.value;
         
-        // Find and update the transaction in our dataset
         const transaction = transactions.find(t => t.id === transactionId);
         if (transaction) {
           transaction.description = newDescription;
-          
-          // Save the updated transactions to storage
-          saveState(transactions);
-        }
-      });
-    });
-
-    // Add change event listeners to all expense select dropdowns
-    document.querySelectorAll('.expense-select').forEach(select => {
-      select.addEventListener('change', (e) => {
-        const transactionId = e.target.dataset.transactionId;
-        const selectedValue = e.target.value;
-        const selectedOption = e.target.options[e.target.selectedIndex];
-        const selectedLabel = selectedOption.text;
-        
-        // Find and update the transaction in our dataset
-        const transaction = transactions.find(t => t.id === transactionId);
-        if (transaction) {
-          transaction.expenseType = selectedValue;
-          transaction.expenseLabel = selectedLabel;
-          
-          // Save the updated transactions to storage
           saveState(transactions);
         }
       });
@@ -176,18 +310,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const row = e.target.closest('.transaction-row');
         const transactionId = row.dataset.transactionId;
         
-        // Remove the transaction from our dataset
         currentTransactions = currentTransactions.filter(t => t.id !== transactionId);
-        
-        // Save the updated transactions to storage
         saveState(currentTransactions);
         
-        // Check if this was the last transaction
         if (currentTransactions.length === 0) {
-          displayTransactions([]); // Show empty state
+          displayTransactions([]);
           addToExpenseBtn.disabled = true;
         } else {
-          // Just remove the row
           row.remove();
         }
       });
@@ -226,7 +355,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       // Get default expense option
-      const defaultOption = getExpenseOptions()[0];
+      const defaultOption = expenseOptions[0];
 
       // Add default expense type and label to each transaction
       const transactions = response.transactions.map(transaction => ({

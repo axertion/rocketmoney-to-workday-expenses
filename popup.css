@@ -668,4 +668,94 @@ h1 {
 .datepicker-nav-icon {
   width: 24px;
   height: 24px;
+}
+
+.expense-input-container {
+  position: relative;
+  width: 100%;
+}
+
+.expense-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.expense-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.expense-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-top: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+  display: none;
+}
+
+.expense-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.expense-option:last-child {
+  border-bottom: none;
+}
+
+.expense-option:hover {
+  background-color: #f8f9fa;
+}
+
+.expense-option .option-label {
+  flex: 1;
+}
+
+.expense-option .delete-option-btn {
+  opacity: 0;
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+}
+
+.expense-option:hover .delete-option-btn {
+  opacity: 0.5;
+}
+
+.expense-option .delete-option-btn:hover {
+  opacity: 1;
+}
+
+.expense-option .delete-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.expense-option.create-new {
+  color: #007bff;
+  font-style: italic;
+}
+
+.expense-option.create-new .delete-option-btn {
+  display: none;
 } 

@@ -30,6 +30,10 @@
       "js": ["workday.js"]
     }
   ],
+  "web_accessible_resources": [{
+    "resources": ["node_modules/*"],
+    "matches": ["<all_urls>"]
+  }],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
