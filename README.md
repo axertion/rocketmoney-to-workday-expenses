@@ -11,9 +11,6 @@ This Chrome extension allows you to extract transactions from RocketMoney.com wi
 
 ## Installation
 
-> [!WARNING]
-> This should be considered a BETA and therefore I have made the decision to not release it to the Chrome store yet. I've tested it pretty well but it may cause untold harm to your Monarch transactions! I recommend downloading a copy of your Monarch transactions before using this!
-
 1. Download the latest release zip (`chrome-rocketmoney-workday-expenses.zip`) from the [releases page](https://github.com/axertion/rocketmoney-to-workday-expenses/releases/latest)
 2. Unzip the file
 3. Open Chrome and navigate to `chrome://extensions`
