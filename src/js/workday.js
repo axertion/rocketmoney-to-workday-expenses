@@ -153,7 +153,13 @@ async function processTransactions(transactions) {
   document.body.appendChild(overlay);
 
   try {
-    await clickEditExpenseReportButton();
+
+    // Check if Add button exists, if not, click Edit Expense Report button
+    const addButtonExists = await waitForElement('[data-automation-id="multiViewContainerAddButton"]', 5000).catch(() => false);
+    if (!addButtonExists) {
+      await clickEditExpenseReportButton();
+    }
+    
     
     for (let i = 0; i < transactions.length; i++) {
       // Check if processing was cancelled
