@@ -1,6 +1,6 @@
 # RocketMoney to Workday Expenses Chrome Extension
 
-This Chrome extension allows you to extract transactions from RocketMoney.com within a specified date range.
+This Chrome extension allows you to extract transactions from RocketMoney.com and add them to a Workday expense report.
 
 ## Installation
 
