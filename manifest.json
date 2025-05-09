@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "RocketMoney Transaction Extractor",
+  "name": "RocketMoney to Workday Expenses",
   "version": "1.0",
   "description": "Extract transactions from RocketMoney.com and add them to Workday expense reports",
   "permissions": [

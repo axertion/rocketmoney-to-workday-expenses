@@ -1,4 +1,4 @@
-# RocketMoney Transaction Extractor Chrome Extension
+# RocketMoney to Workday Expenses Chrome Extension
 
 This Chrome extension allows you to extract transactions from RocketMoney.com within a specified date range.
 
@@ -33,7 +33,7 @@ This Chrome extension allows you to extract transactions from RocketMoney.com wi
 ## Features
 
 - Extracts transactions from Rocket Money
-- Quickly made edits to date, memo and expense lines
+- Quickly make edits to date, memo and expense lines
 - One click import of your edited expenses into Workday Expense Report
 
 
