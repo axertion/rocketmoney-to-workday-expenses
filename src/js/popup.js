@@ -8,10 +8,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Load saved state when popup opens
   chrome.storage.local.get(['transactions', 'expenseOptions'], function(result) {
-    if (result.transactions) {
+    if (result.transactions && result.transactions.length > 0) {
       currentTransactions = result.transactions;
       displayTransactions(result.transactions);
       addToExpenseBtn.disabled = false;
+    } else {
+      displayTransactions([]);
+      addToExpenseBtn.disabled = true;
     }
     if (result.expenseOptions) {
       expenseOptions = result.expenseOptions;
