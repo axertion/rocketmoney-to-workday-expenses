@@ -24,11 +24,12 @@ This Chrome extension allows you to extract transactions from RocketMoney.com an
 2. Go to the Transactions page
 3. Filter to the transactions you want to expense using the Rocket Money filters
 4. Open the plugin
-4. Click "Get transactions" to fetch the transactions
-5. Make any adjustments to the Dates, Memo and Expense Item fields
-6. Login to Workday and create a new Expense Report. 
-7. Fill in the Expense Report Information and click Ok
-8. Open the plugin and click Add to expense report
+5. Click "Get transactions" to fetch the transactions
+6. Make any adjustments to the Dates, Memo and Expense Item fields
+7. Login to Workday and create a new Expense Report. 
+8. Fill in the Expense Report Information and click Ok
+9. Open the plugin and click Add to expense report
+10. Sit back and relax as your expense report is automatically filled in 
 
 ## Features
 
