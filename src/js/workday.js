@@ -294,6 +294,7 @@ async function clickAddButton() {
       console.log('Found Add button, clicking it...');
       addButton.click();
       console.log('Clicked Add button');
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Wait for the form to appear
       console.log('Waiting for expense form to appear...');
@@ -347,6 +348,24 @@ async function simulateTyping(input, value) {
   input.dispatchEvent(new Event('blur', { bubbles: true }));
 }
 
+async function waitForSaveToComplete() {
+  try {
+    // Wait for the form to disappear
+    await waitForElement('[data-automation-id="inlineRowEditPage"]', 5000, true);
+    
+    // Wait for the new expense item to appear in the list
+    await waitForElement('[data-automation-id="multiViewListDetailItem"]', 5000);
+    
+    // Add a small delay to ensure everything is settled
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    return true;
+  } catch (error) {
+    console.error('Error waiting for save to complete:', error);
+    return false;
+  }
+}
+
 async function clickSelectedMenuItemToSave() {
   console.log('Looking for element with data-automation-id="multiViewListDetailItem" and data-automation-selected="true"');
   const selectedItem = document.querySelector('[data-automation-id="multiViewListDetailItem"][data-automation-selected="true"]');
@@ -355,6 +374,12 @@ async function clickSelectedMenuItemToSave() {
     console.log('Found selected item element');
     selectedItem.click();
     console.log('Clicked on selected item element');
+    
+    // Wait for save to complete
+    const saveCompleted = await waitForSaveToComplete();
+    if (!saveCompleted) {
+      throw new Error('Failed to save transaction');
+    }
   } else {
     console.log('Could not find selected item element');
     
@@ -364,12 +389,17 @@ async function clickSelectedMenuItemToSave() {
       console.log('Found list item element without selected attribute');
       listItem.click();
       console.log('Clicked on list item element');
+      
+      // Wait for save to complete
+      const saveCompleted = await waitForSaveToComplete();
+      if (!saveCompleted) {
+        throw new Error('Failed to save transaction');
+      }
     } else {
-      console.log('Could not find any list item elements');
+      throw new Error('Could not find any list item elements to save');
     }
   }
 }
-
 
 async function fillExpenseDateInput(formContainer, transaction) {
   const date = new Date(transaction.date);
@@ -413,7 +443,6 @@ async function fillExpenseDateInput(formContainer, transaction) {
   // Optionally click the calendar icon to trigger re-evaluation
   const calendarBtn = document.querySelector('[data-automation-id="datePickerButton"]');
   if (calendarBtn) {
-    console.log('Clicking calendar button');
     calendarBtn.click();
   }
 
@@ -431,9 +460,8 @@ async function fillExpenseDateInput(formContainer, transaction) {
     if (selectedDay) {
       console.log('Found selected day element:', selectedDay.getAttribute('data-automation-id'));
       selectedDay.click();
-      console.log('Clicked selected day');
     } else {
-      console.log('Could not find selected day element');
+      console.error('Could not find selected day element');
     }
   } catch (error) {
     console.error('Error handling date selection:', error);
@@ -442,11 +470,6 @@ async function fillExpenseDateInput(formContainer, transaction) {
 }
 
 async function fillExpenseItemInput(formContainer, transaction) {
-  // Set the expense item (description)
-  const expenseItemInput = formContainer.querySelector('[data-automation-id="monikerListSuggestionsInput"] input');
-  if (!expenseItemInput) {
-    throw new Error('Could not find expense item input');
-  }
 
   // Try to find and select the expense item with retries
   let maxRetries = 3;
@@ -455,6 +478,11 @@ async function fillExpenseItemInput(formContainer, transaction) {
 
   while (retryCount < maxRetries && !expenseItemContainer) {
     try {
+      const formContainer = document.querySelector('[data-automation-id="inlineRowEditPage"]');
+      const expenseItemInput = formContainer.querySelector('[data-automation-id="monikerListSuggestionsInput"] input');
+      if (!expenseItemInput) {
+        throw new Error('Could not find expense item input');
+      }
       // Input the expense label and trigger the search
       await inputExpenseItemAndSearch(expenseItemInput, transaction.expenseLabel);
       
@@ -561,6 +589,57 @@ async function fillMemoInput(formContainer, transaction) {
   }
 }
 
+// Function to validate form field values
+async function validateFormFields(formContainer, transaction) {
+  const validationResults = {
+    date: false,
+    // expenseItem: false,
+    amount: false,
+    memo: false
+  };
+
+  // Validate date
+  const monthInput = formContainer.querySelector('[data-automation-id="dateSectionMonth-input"]');
+  const dayInput = formContainer.querySelector('[data-automation-id="dateSectionDay-input"]');
+  const yearInput = formContainer.querySelector('[data-automation-id="dateSectionYear-input"]');
+  
+  if (monthInput && dayInput && yearInput) {
+    const date = new Date(transaction.date);
+    const expectedMonth = (date.getMonth() + 1).toString().padStart(2, '0');
+    const expectedDay = date.getDate().toString().padStart(2, '0');
+    const expectedYear = date.getFullYear().toString();
+    
+    validationResults.date = monthInput.value === expectedMonth && 
+                           dayInput.value === expectedDay && 
+                           yearInput.value === expectedYear;
+  }
+
+  // Validate expense item
+  // const expenseItemInput = formContainer.querySelector('[data-automation-id="monikerListSuggestionsInput"] input');
+  // if (expenseItemInput) {
+  //   validationResults.expenseItem = expenseItemInput.value === transaction.expenseLabel;
+  // }
+
+  // Validate amount
+  const amountInput = formContainer.querySelector('[data-automation-id="numericInput"]');
+  if (amountInput) {
+    const expectedAmount = transaction.amount.replace('$', '').trim();
+    validationResults.amount = amountInput.value === expectedAmount;
+  }
+
+  // Validate memo
+  const memoLabel = Array.from(formContainer.querySelectorAll('[data-automation-id="formLabel"]'))
+    .find(label => label.textContent.trim() === 'Memo');
+  if (memoLabel) {
+    const memoInputId = memoLabel.getAttribute('for');
+    const memoInput = formContainer.querySelector(`[id="${memoInputId}"]`);
+    if (memoInput) {
+      validationResults.memo = memoInput.value === transaction.description;
+    }
+  }
+
+  return validationResults;
+}
 
 async function fillTransactionForm(transaction) {
   try {
@@ -573,17 +652,47 @@ async function fillTransactionForm(transaction) {
     }
     console.log('Using existing expense form');
 
-    // Fill in the expense details
-    await fillExpenseDateInput(formContainer, transaction);
-    await fillExpenseItemInput(formContainer, transaction);
-    await fillAmountInput(formContainer, transaction);
-    await fillMemoInput(formContainer, transaction);
+    const maxRetries = 3;
+    let retryCount = 0;
+    let validationResults;
+
+    do {
+      // Fill in the expense details
+      await fillExpenseDateInput(formContainer, transaction);
+      await fillExpenseItemInput(formContainer, transaction);
+      await fillAmountInput(formContainer, transaction);
+      await fillMemoInput(formContainer, transaction);
+
+      // Wait for values to be set
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Validate all fields
+      validationResults = await validateFormFields(formContainer, transaction);
+      
+      // Check if any fields failed validation
+      const failedFields = Object.entries(validationResults)
+        .filter(([_, isValid]) => !isValid)
+        .map(([field]) => field);
+
+      if (failedFields.length > 0) {
+        console.log(`Validation failed for fields: ${failedFields.join(', ')}`);
+        retryCount++;
+        
+        if (retryCount < maxRetries) {
+          console.log(`Retrying form fill (attempt ${retryCount + 1} of ${maxRetries})...`);
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } else {
+          throw new Error(`Failed to set form fields correctly after ${maxRetries} attempts. Failed fields: ${failedFields.join(', ')}`);
+        }
+      }
+    } while (Object.values(validationResults).some(isValid => !isValid) && retryCount < maxRetries);
 
     console.log('Waiting 1 second before clicking save');
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Click the selected menu item on the left to save
-    clickSelectedMenuItemToSave();
+    // Click the selected menu item on the left to save and wait for save to complete
+    await clickSelectedMenuItemToSave();
 
     console.log('Form filled in successfully');
   } catch (error) {
@@ -642,12 +751,10 @@ async function inputExpenseItemAndSearch(expenseItemInput, searchText) {
   expenseItemInput.dispatchEvent(new Event('input', { bubbles: true }));
   
   // Add a delay to allow the input to register
-  console.log('Waiting before triggering Enter key...');
   await new Promise(resolve => setTimeout(resolve, 1000));
   
   // Ensure the input is focused before hitting Enter
   expenseItemInput.focus();
-  console.log('Ensured expense item input is focused');
   
   // Simulate a complete key press sequence for Enter/Return
   // This is a more comprehensive approach that mimics a real user interaction
@@ -662,7 +769,6 @@ async function inputExpenseItemAndSearch(expenseItemInput, searchText) {
     cancelable: true
   });
   expenseItemInput.dispatchEvent(keydownEvent);
-  console.log('Dispatched keydown event for Enter');
   
   // // 2. Then, dispatch a keypress event
   const keypressEvent = new KeyboardEvent('keypress', {
@@ -674,7 +780,6 @@ async function inputExpenseItemAndSearch(expenseItemInput, searchText) {
     cancelable: true
   });
   expenseItemInput.dispatchEvent(keypressEvent);
-  console.log('Dispatched keypress event for Enter');
   
   // // 3. Finally, dispatch a keyup event
   const keyupEvent = new KeyboardEvent('keyup', {
@@ -686,7 +791,6 @@ async function inputExpenseItemAndSearch(expenseItemInput, searchText) {
     cancelable: true
   });
   expenseItemInput.dispatchEvent(keyupEvent);
-  console.log('Dispatched keyup event for Enter');
   
   // // 4. Also try the Return key sequence (for Mac)
   const returnKeydownEvent = new KeyboardEvent('keydown', {
@@ -698,7 +802,6 @@ async function inputExpenseItemAndSearch(expenseItemInput, searchText) {
     cancelable: true
   });
   expenseItemInput.dispatchEvent(returnKeydownEvent);
-  console.log('Dispatched keydown event for Return');
   
   const returnKeypressEvent = new KeyboardEvent('keypress', {
     key: 'Return',
@@ -709,7 +812,6 @@ async function inputExpenseItemAndSearch(expenseItemInput, searchText) {
     cancelable: true
   });
   expenseItemInput.dispatchEvent(returnKeypressEvent);
-  console.log('Dispatched keypress event for Return');
   
   const returnKeyupEvent = new KeyboardEvent('keyup', {
     key: 'Return',
@@ -720,13 +822,11 @@ async function inputExpenseItemAndSearch(expenseItemInput, searchText) {
     cancelable: true
   });
   expenseItemInput.dispatchEvent(returnKeyupEvent);
-  console.log('Dispatched keyup event for Return');
   
   // 5. Try to find and click a search button if it exists
   const searchButton = expenseItemInput.closest('[data-automation-id="inlineRowEditPage"]').querySelector('[data-automation-id="searchButton"]');
   if (searchButton) {
     searchButton.click();
-    console.log('Clicked search button');
   }
   
   console.log(`Entered "${searchText}" and attempted to trigger Enter/Return key sequence`);
