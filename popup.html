@@ -3,6 +3,7 @@
 <head>
   <title>Rocket Money to Workday Expense Report</title>
   <link rel="stylesheet" href="src/css/popup.css">
+  <link rel="stylesheet" href="src/css/modal.css">
   <link rel="stylesheet" href="node_modules/vanillajs-datepicker/dist/css/datepicker.min.css">
   <script src="node_modules/vanillajs-datepicker/dist/js/datepicker.min.js"></script>
 </head>
@@ -33,19 +34,7 @@
             </div>
           </div>
         </div>
-
-        <div id="transactions" class="transactions-container">
-          <div class="transactions-table">
-            <div class="table-header">
-              <div class="date-col">Date</div>
-              <div class="memo-col">Memo</div>
-              <div class="expense-col">Expense Item</div>
-              <div class="amount-col">Amount</div>
-              <div class="delete-col"></div>
-            </div>
-            <div class="table-body" id="transactionsBody"></div>
-          </div>
-        </div>
+        <div id="transactions" class="transactions-container"></div>
       </div>
 
       <div class="card card-2">

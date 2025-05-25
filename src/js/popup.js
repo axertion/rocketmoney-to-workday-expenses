@@ -1,10 +1,50 @@
 document.addEventListener('DOMContentLoaded', function() {
   const extractBtn = document.getElementById('extractBtn');
   const addToExpenseBtn = document.getElementById('addToExpenseBtn');
-  const transactionsBody = document.getElementById('transactionsBody');
+  const transactionsContainer = document.getElementById('transactions');
 
   let currentTransactions = [];
   let expenseOptions = [];
+
+  // Add confirmation modal HTML to the document
+  const modalHTML = `
+    <div id="deleteAllModal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <h3>Delete All Transactions</h3>
+        <p>Are you sure you want to delete all transactions? This action cannot be undone.</p>
+        <div class="modal-buttons">
+          <button id="cancelDeleteAll" class="button secondary">Cancel</button>
+          <button id="confirmDeleteAll" class="button danger">Delete All</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+  // Get modal elements
+  const modal = document.getElementById('deleteAllModal');
+  const confirmDeleteBtn = document.getElementById('confirmDeleteAll');
+  const cancelDeleteBtn = document.getElementById('cancelDeleteAll');
+
+  // Modal event handlers
+  confirmDeleteBtn.addEventListener('click', () => {
+    currentTransactions = [];
+    saveState(currentTransactions);
+    displayTransactions([]);
+    addToExpenseBtn.disabled = true;
+    modal.style.display = 'none';
+  });
+
+  cancelDeleteBtn.addEventListener('click', () => {
+    modal.style.display = 'none';
+  });
+
+  // Close modal when clicking outside
+  window.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.style.display = 'none';
+    }
+  });
 
   // Load saved state when popup opens
   chrome.storage.local.get(['transactions', 'expenseOptions'], function(result) {
@@ -21,9 +61,9 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
       // Initialize with default options if none exist
       expenseOptions = [
-        { value: 'team-meals', label: 'Team Meals' },
         { value: 'travel-meals-individual', label: 'Travel Meals - Individual' },
-        { value: 'travel-meals-group', label: 'Travel Meals - Group' }
+        { value: 'travel-meals-group', label: 'Travel Meals - Group' },
+        { value: 'travel-meals-group', label: 'Taxi/Uber/Train/Etc' }
       ];
       saveExpenseOptions(expenseOptions);
     }
@@ -69,7 +109,11 @@ document.addEventListener('DOMContentLoaded', function() {
           <div class="memo-col">Memo</div>
           <div class="expense-col">Expense Item</div>
           <div class="amount-col">Amount</div>
-          <div class="delete-col"></div>
+          <div class="delete-col">
+            <button class="delete-btn delete-all-btn" title="Delete all transactions">
+              <img src="src/images/trash.svg" alt="Delete All" class="delete-icon">
+            </button>
+          </div>
         </div>
         <div class="table-body" id="transactionsBody"></div>
       </div>
@@ -369,6 +413,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
     });
+
+    // Add delete all button event listener
+    const deleteAllBtn = document.querySelector('.delete-all-btn');
+    deleteAllBtn.addEventListener('click', () => {
+      modal.style.display = 'block';
+    });
   }
 
   // Helper function to save state
@@ -419,7 +469,7 @@ document.addEventListener('DOMContentLoaded', function() {
       displayTransactions(transactions);
       addToExpenseBtn.disabled = false;
     } catch (error) {
-      transactionsBody.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+      transactionsContainer.innerHTML = `<div class="error">Error: ${error.message}</div>`;
     } finally {
       extractBtn.disabled = false;
     }
@@ -437,11 +487,11 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       extractBtn.disabled = true;
-      transactionsBody.innerHTML = '<div class="loading">Extracting transactions...</div>';
+      transactionsContainer.innerHTML = '<div class="loading">Extracting transactions...</div>';
 
       await extractTransactions();
     } catch (error) {
-      transactionsBody.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+      transactionsContainer.innerHTML = `<div class="error">Error: ${error.message}</div>`;
     } finally {
       extractBtn.disabled = false;
     }
