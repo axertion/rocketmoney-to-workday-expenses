@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const modalHTML = `
     <div id="deleteAllModal" class="modal" style="display: none;">
       <div class="modal-content">
-        <h3>Delete All Transactions</h3>
+        <h2>Delete all transactions</h2>
         <p>Are you sure you want to delete all transactions? This action cannot be undone.</p>
         <div class="modal-buttons">
           <button id="cancelDeleteAll" class="button secondary">Cancel</button>
@@ -120,6 +120,31 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
 
     const transactionsBody = document.getElementById('transactionsBody');
+    const transactionsTable = document.querySelector('.transactions-table');
+
+    // Function to check if element has scrollbar
+    function hasScrollbar(element) {
+      return element.scrollHeight > element.clientHeight;
+    }
+
+    // Function to update scrollbar class
+    function updateScrollbarClass() {
+      if (hasScrollbar(transactionsBody)) {
+        transactionsTable.classList.add('scrollbar-visible');
+      } else {
+        transactionsTable.classList.remove('scrollbar-visible');
+      }
+    }
+
+    // Check initially
+    updateScrollbarClass();
+
+    // Check on window resize
+    window.addEventListener('resize', updateScrollbarClass);
+
+    // Check when content changes
+    const observer = new ResizeObserver(updateScrollbarClass);
+    observer.observe(transactionsBody);
 
     const transactionsHTML = transactions.map(transaction => {
       const date = new Date(transaction.date);

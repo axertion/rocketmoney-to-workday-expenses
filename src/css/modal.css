@@ -22,14 +22,14 @@
   width: 90%;
 }
 
-.modal-content h3 {
+.modal-content h2 {
   margin: 0 0 16px 0;
-  color: #333;
 }
 
 .modal-content p {
   margin: 0 0 24px 0;
-  color: #666;
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
 .modal-buttons {
@@ -37,7 +37,3 @@
   justify-content: space-between;
 }
 
-
-.table-header .delete-btn {
-  margin: -6px 0 -9px 0;
-}

@@ -10,6 +10,10 @@ body {
   overflow: hidden;
 }
 
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 500;
+}
+
 .container {
   box-sizing: border-box;
   height: 600px;
@@ -444,7 +448,7 @@ h1 {
 .table-header {
   display: grid;
   grid-template-columns: 120px 1.5fr 1.5fr 1fr 40px;
-  padding: 12px 22px 12px 16px;
+  padding: 12px 8px 12px 16px;
   background-color: #f8f8f8;
   border-bottom: 1px solid #e0e0e0;
   font-weight: 500;
@@ -461,9 +465,12 @@ h1 {
 }
 
 
-/* Table header padding adjustment for scrollbar */
-.table-header {
-  padding-right: 16px; /* Default padding */
+.table-header .delete-btn {
+  margin: -6px 0 -9px 0;
+}
+
+.transactions-table.scrollbar-visible .table-header {
+  padding-right: 24px; /* Padding when scrollbar is visible */
 }
 
 .table-body {
