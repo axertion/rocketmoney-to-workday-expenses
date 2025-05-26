@@ -21,7 +21,16 @@ document.addEventListener('DOMContentLoaded', function() {
     <div id="settingsModal" class="modal" style="display: none;">
       <div class="modal-content">
         <h2>Transaction Settings</h2>
-        <p>Settings goes here</p>
+        <div class="setting-item">
+          <div class="setting-header">
+            <h3>Use Previous Day for Dates</h3>
+            <label class="toggle-switch">
+              <input type="checkbox" id="usePreviousDayToggle">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <p class="setting-description">Often times the date shown in Rocket Money is the day after you made the purchase as it may take a day to settle. This sets the transaction date to the day before the date shown in Rocket Money so your expense items are more accurate.</p>
+        </div>
         <div class="modal-buttons">
           <button id="closeSettings" class="button secondary">Close</button>
         </div>
@@ -36,6 +45,19 @@ document.addEventListener('DOMContentLoaded', function() {
   const confirmDeleteBtn = document.getElementById('confirmDeleteAll');
   const cancelDeleteBtn = document.getElementById('cancelDeleteAll');
   const closeSettingsBtn = document.getElementById('closeSettings');
+  const usePreviousDayToggle = document.getElementById('usePreviousDayToggle');
+
+  // Load settings from storage
+  chrome.storage.local.get(['usePreviousDay'], function(result) {
+    if (result.usePreviousDay !== undefined) {
+      usePreviousDayToggle.checked = result.usePreviousDay;
+    }
+  });
+
+  // Save settings when toggle changes
+  usePreviousDayToggle.addEventListener('change', function() {
+    chrome.storage.local.set({ usePreviousDay: this.checked });
+  });
 
   // Modal event handlers
   confirmDeleteBtn.addEventListener('click', () => {
@@ -66,6 +88,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Load saved state when popup opens
   chrome.storage.local.get(['transactions', 'expenseOptions'], function(result) {
+    // Add settings button to action container
+    const actionContainer = document.querySelector('.action-container');
+    const extractBtn = document.getElementById('extractBtn');
+    
+    // Create and insert settings button before the extract button
+    const settingsBtn = document.createElement('button');
+    settingsBtn.id = 'settingsBtn';
+    settingsBtn.className = 'button icon';
+    settingsBtn.title = 'Transaction Settings';
+    settingsBtn.innerHTML = '<img src="src/images/settings.svg" alt="Settings" class="icon">';
+    actionContainer.insertBefore(settingsBtn, extractBtn);
+
+    // Add settings button event listener
+    settingsBtn.addEventListener('click', () => {
+      settingsModal.style.display = 'block';
+    });
+
     if (result.transactions && result.transactions.length > 0) {
       currentTransactions = result.transactions;
       displayTransactions(result.transactions);
@@ -119,20 +158,6 @@ document.addEventListener('DOMContentLoaded', function() {
       
       return;
     }
-
-    // Update the action container to include settings button
-    const actionContainer = document.querySelector('.action-container');
-    actionContainer.innerHTML = `
-      <button id="settingsBtn" class="button icon" title="Transaction Settings">
-        <img src="src/images/settings.svg" alt="Settings" class="icon">
-      </button>
-      <button id="extractBtn" class="button primary">Get transactions</button>
-    `;
-
-    // Add settings button event listener
-    document.getElementById('settingsBtn').addEventListener('click', () => {
-      settingsModal.style.display = 'block';
-    });
 
     transactionsContainer.innerHTML = `
       <div class="transactions-table">
@@ -456,8 +481,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add click event listeners to all delete buttons
     document.querySelectorAll('.delete-btn').forEach(button => {
       button.addEventListener('click', (e) => {
+        // Check if this is the delete all button
+        if (button.classList.contains('delete-all-btn')) {
+          deleteAllModal.style.display = 'block';
+          return;
+        }
+
+        // Handle individual transaction delete
         const row = e.target.closest('.transaction-row');
+        if (!row) return; // Guard against null row
+        
         const transactionId = row.dataset.transactionId;
+        if (!transactionId) return; // Guard against missing transaction ID
         
         currentTransactions = currentTransactions.filter(t => t.id !== transactionId);
         saveState(currentTransactions);
@@ -469,12 +504,6 @@ document.addEventListener('DOMContentLoaded', function() {
           row.remove();
         }
       });
-    });
-
-    // Add delete all button event listener
-    const deleteAllBtn = document.querySelector('.delete-all-btn');
-    deleteAllBtn.addEventListener('click', () => {
-      deleteAllModal.style.display = 'block';
     });
   }
 
@@ -512,13 +541,23 @@ document.addEventListener('DOMContentLoaded', function() {
       // Get default expense option
       const defaultOption = expenseOptions[0];
 
+      // Get usePreviousDay setting
+      const { usePreviousDay } = await chrome.storage.local.get(['usePreviousDay']);
+
       // Add default expense type and label to each transaction
-      const transactions = response.transactions.map(transaction => ({
-        ...transaction,
-        id: generateUUID(), // Add unique ID to each transaction
-        expenseType: defaultOption.value,
-        expenseLabel: defaultOption.label
-      }));
+      const transactions = response.transactions.map(transaction => {
+        let date = new Date(transaction.date);
+        if (usePreviousDay) {
+          date.setDate(date.getDate() - 1);
+        }
+        return {
+          ...transaction,
+          id: generateUUID(), // Add unique ID to each transaction
+          date: date.toISOString(),
+          expenseType: defaultOption.value,
+          expenseLabel: defaultOption.label
+        };
+      });
 
       // Save and display transactions
       currentTransactions = transactions;
