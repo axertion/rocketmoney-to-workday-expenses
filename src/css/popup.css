@@ -396,6 +396,7 @@ h1 {
 
 .button.primary:disabled {
   background-color: #ccc;
+  border-color: #ccc;
   cursor: not-allowed;
 }
 
