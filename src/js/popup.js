@@ -14,7 +14,16 @@ document.addEventListener('DOMContentLoaded', function() {
         <p>Are you sure you want to delete all transactions? This action cannot be undone.</p>
         <div class="modal-buttons">
           <button id="cancelDeleteAll" class="button secondary">Cancel</button>
-          <button id="confirmDeleteAll" class="button danger">Delete All</button>
+          <button id="confirmDeleteAll" class="button danger">Delete all</button>
+        </div>
+      </div>
+    </div>
+    <div id="settingsModal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <h2>Transaction Settings</h2>
+        <p>Settings goes here</p>
+        <div class="modal-buttons">
+          <button id="closeSettings" class="button secondary">Close</button>
         </div>
       </div>
     </div>
@@ -22,9 +31,11 @@ document.addEventListener('DOMContentLoaded', function() {
   document.body.insertAdjacentHTML('beforeend', modalHTML);
 
   // Get modal elements
-  const modal = document.getElementById('deleteAllModal');
+  const deleteAllModal = document.getElementById('deleteAllModal');
+  const settingsModal = document.getElementById('settingsModal');
   const confirmDeleteBtn = document.getElementById('confirmDeleteAll');
   const cancelDeleteBtn = document.getElementById('cancelDeleteAll');
+  const closeSettingsBtn = document.getElementById('closeSettings');
 
   // Modal event handlers
   confirmDeleteBtn.addEventListener('click', () => {
@@ -32,17 +43,24 @@ document.addEventListener('DOMContentLoaded', function() {
     saveState(currentTransactions);
     displayTransactions([]);
     addToExpenseBtn.disabled = true;
-    modal.style.display = 'none';
+    deleteAllModal.style.display = 'none';
   });
 
   cancelDeleteBtn.addEventListener('click', () => {
-    modal.style.display = 'none';
+    deleteAllModal.style.display = 'none';
   });
 
-  // Close modal when clicking outside
+  closeSettingsBtn.addEventListener('click', () => {
+    settingsModal.style.display = 'none';
+  });
+
+  // Close modals when clicking outside
   window.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      modal.style.display = 'none';
+    if (e.target === deleteAllModal) {
+      deleteAllModal.style.display = 'none';
+    }
+    if (e.target === settingsModal) {
+      settingsModal.style.display = 'none';
     }
   });
 
@@ -101,6 +119,20 @@ document.addEventListener('DOMContentLoaded', function() {
       
       return;
     }
+
+    // Update the action container to include settings button
+    const actionContainer = document.querySelector('.action-container');
+    actionContainer.innerHTML = `
+      <button id="settingsBtn" class="button icon" title="Transaction Settings">
+        <img src="src/images/settings.svg" alt="Settings" class="icon">
+      </button>
+      <button id="extractBtn" class="button primary">Get transactions</button>
+    `;
+
+    // Add settings button event listener
+    document.getElementById('settingsBtn').addEventListener('click', () => {
+      settingsModal.style.display = 'block';
+    });
 
     transactionsContainer.innerHTML = `
       <div class="transactions-table">
@@ -442,7 +474,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add delete all button event listener
     const deleteAllBtn = document.querySelector('.delete-all-btn');
     deleteAllBtn.addEventListener('click', () => {
-      modal.style.display = 'block';
+      deleteAllModal.style.display = 'block';
     });
   }
 
