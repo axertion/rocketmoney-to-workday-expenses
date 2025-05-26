@@ -84,10 +84,10 @@
   font-weight: 500;
 }
 
-.setting-description {
+.modal-content p.setting-description {
   margin: 0;
   color: #666;
-  font-size: 0.875rem;
+  font-size: 14px;
   line-height: 1.5;
 }
 
@@ -95,8 +95,8 @@
 .toggle-switch {
   position: relative;
   display: inline-block;
-  width: 44px;
-  height: 24px;
+  width: 36px;
+  height: 20px;
 }
 
 .toggle-switch input {
@@ -120,8 +120,8 @@
 .toggle-slider:before {
   position: absolute;
   content: "";
-  height: 20px;
-  width: 20px;
+  height: 16px;
+  width: 16px;
   left: 2px;
   bottom: 2px;
   background-color: white;
@@ -130,10 +130,10 @@
 }
 
 input:checked + .toggle-slider {
-  background-color: #2196F3;
+  background-color: rgb(41, 133, 64);
 }
 
 input:checked + .toggle-slider:before {
-  transform: translateX(20px);
+  transform: translateX(16px);
 }
 
