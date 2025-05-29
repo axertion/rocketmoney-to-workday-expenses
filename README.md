@@ -4,13 +4,6 @@ This Chrome extension allows you to extract transactions from RocketMoney.com an
 
 ## Installation
 
-1. Clone this repository or download the files
-2. Open Chrome and go to `chrome://extensions/`
-3. Enable "Developer mode" in the top right corner
-4. Click "Load unpacked" and select the directory containing these files
-
-## Installation
-
 1. Download the latest release zip (`chrome-rocketmoney-to-workday-expenses.zip`) from the [releases page](https://github.com/axertion/rocketmoney-to-workday-expenses/releases/latest)
 2. Unzip the file
 3. Open Chrome and navigate to `chrome://extensions`
