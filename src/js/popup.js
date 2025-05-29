@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', function() {
       expenseOptions = [
         { value: 'travel-meals-individual', label: 'Travel Meals - Individual' },
         { value: 'travel-meals-group', label: 'Travel Meals - Group' },
-        { value: 'travel-meals-group', label: 'Taxi/Uber/Train/Etc' }
+        { value: 'taxi-uber-train-etc', label: 'Taxi/Uber/Train/Etc' }
       ];
       saveExpenseOptions(expenseOptions);
     }
